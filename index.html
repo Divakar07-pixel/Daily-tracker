@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf7f2">
+<title>My Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-mark">📓</div>
+      <div>
+        <div class="brand-name">My Daily Tracker</div>
+        <div class="brand-sub">Activity &amp; Expense Log</div>
+      </div>
+    </div>
+    <div id="live-time">--:--</div>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="tab('dash')">Dashboard</button>
+    <button class="nav-btn" onclick="tab('act')">Activities</button>
+    <button class="nav-btn" onclick="tab('exp')">Expenses</button>
+    <button class="nav-btn" onclick="tab('history')">History</button>
+    <button class="nav-btn" onclick="tab('export')">Export</button>
+  </nav>
+</header>
+
+<!-- ── TOAST ───────────────────────────────────────────────────────────────── -->
+<div id="toast">Saved!</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PANEL — DASHBOARD
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="p-dash" class="panel active">
+
+  <p style="font-size:.78rem;color:var(--ink3);margin-bottom:12px;font-weight:500" id="dash-date"></p>
+
+  <div class="sec-title">Today at a Glance</div>
+
+  <div class="kpi-grid">
+    <div class="kpi pine">
+      <div class="kpi-val" id="kpi-acts">0</div>
+      <div class="kpi-lbl">Activities</div>
+    </div>
+    <div class="kpi sky">
+      <div class="kpi-val" id="kpi-hours">0h</div>
+      <div class="kpi-lbl">Time Logged</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-val" id="kpi-exp-today">₹0</div>
+      <div class="kpi-lbl">Spent Today</div>
+    </div>
+    <div class="kpi rose">
+      <div class="kpi-val" id="kpi-exp-month">₹0</div>
+      <div class="kpi-lbl">This Month</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1: Expense Donut + Completion Ring -->
+  <div class="charts-row">
+    <div class="chart-card" style="padding:14px">
+      <div class="chart-header">
+        <div class="chart-title">💰 Spending <span class="chart-sub">by category</span></div>
+      </div>
+      <div class="chart-wrap" style="height:160px">
+        <canvas id="chart-exp-donut"></canvas>
+      </div>
+      <div class="chart-legend" id="legend-donut"></div>
+    </div>
+    <div class="chart-card" style="padding:14px">
+      <div class="chart-header">
+        <div class="chart-title">✅ Tasks <span class="chart-sub">completion</span></div>
+      </div>
+      <div class="chart-wrap" style="height:160px">
+        <canvas id="chart-completion-ring"></canvas>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:600;color:var(--pine)" id="completion-pct">—</div>
+        <div style="font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Completion Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHART: 7-day spending line -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">📈 Daily Spending <span class="chart-sub">last 7 days</span></div>
+    </div>
+    <div class="chart-wrap" style="height:180px">
+      <canvas id="chart-spending-line"></canvas>
+    </div>
+  </div>
+
+  <!-- CHART: Activity category bar -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">🏷️ Activity Hours <span class="chart-sub">by category</span></div>
+    </div>
+    <div class="chart-wrap" style="height:180px">
+      <canvas id="chart-act-bar"></canvas>
+    </div>
+  </div>
+
+  <!-- CHART: Payment mode pie -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">💳 Payment Modes <span class="chart-sub">this month</span></div>
+    </div>
+    <div class="chart-wrap" style="height:160px">
+      <canvas id="chart-payment-pie"></canvas>
+    </div>
+    <div class="chart-legend" id="legend-payment"></div>
+  </div>
+
+  <div class="sec-title">Recent Activities</div>
+  <div class="card card-sm">
+    <div id="dash-acts"><div class="empty"><div class="empty-icon">🌱</div><div class="empty-txt">No activities yet today.</div></div></div>
+  </div>
+
+  <div class="sec-title">Recent Expenses</div>
+  <div class="card card-sm">
+    <div id="dash-exps"><div class="empty"><div class="empty-icon">💸</div><div class="empty-txt">No expenses yet today.</div></div></div>
+  </div>
+
+  <div class="sec-title">Category Spending</div>
+  <div class="card card-sm">
+    <div id="dash-cat-summary" class="cat-summary"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PANEL — ADD ACTIVITY
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="p-act" class="panel">
+
+  <div class="sec-title">Log Activity</div>
+
+  <div class="card">
+    <div class="field">
+      <label>Activity Name *</label>
+      <input id="a-name" type="text" placeholder="e.g. Morning run, Client call…" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Category</label>
+      <div class="cat-pills" id="act-cat-pills"></div>
+      <input type="hidden" id="a-cat" value="Work">
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Date</label>
+        <input id="a-date" type="date">
+      </div>
+      <div class="field">
+        <label>Time</label>
+        <input id="a-time" type="time">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Duration</label>
+        <input id="a-dur" type="number" min="0" step="0.25" placeholder="hrs">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="a-status">
+          <option value="Completed">✅ Completed</option>
+          <option value="Pending">⏳ Pending</option>
+          <option value="In Progress">🔄 In Progress</option>
+          <option value="Cancelled">❌ Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="a-notes" placeholder="Optional details…"></textarea>
+    </div>
+
+    <button class="btn-save green" onclick="saveActivity()">✓ Save Activity</button>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PANEL — ADD EXPENSE
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="p-exp" class="panel">
+
+  <div class="sec-title">Log Expense</div>
+
+  <div class="card">
+    <div class="field">
+      <label>Expense Name *</label>
+      <input id="e-name" type="text" placeholder="e.g. Lunch, Uber, Groceries…" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Category</label>
+      <div class="cat-pills" id="exp-cat-pills"></div>
+      <input type="hidden" id="e-cat" value="Food">
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Amount (₹) *</label>
+        <input id="e-amt" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Payment Mode</label>
+        <select id="e-mode">
+          <option>UPI</option>
+          <option>Cash</option>
+          <option>Card</option>
+          <option>Net Banking</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Date</label>
+      <input id="e-date" type="date">
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="e-notes" placeholder="Optional…" style="min-height:54px"></textarea>
+    </div>
+
+    <button class="btn-save amber" onclick="saveExpense()">₹ Save Expense</button>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PANEL — HISTORY
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="p-history" class="panel">
+
+  <div class="sec-title">Activity History</div>
+
+  <div class="card card-sm" style="margin-bottom:8px">
+    <div class="history-filters" style="display:flex;gap:8px;align-items:center">
+      <input id="h-search-act" type="text" placeholder="Search activities…"
+        style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
+               padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"
+        oninput="renderHistory()">
+      <select id="h-filter-act" onchange="renderHistory()"
+        style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
+               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none">
+        <option value="">All cats</option>
+        <option>Work</option><option>Learning</option>
+        <option>Exercise</option><option>Personal</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card card-sm" id="hist-act-list"></div>
+
+  <div class="divider"></div>
+  <div class="sec-title">Expense History</div>
+
+  <div class="card card-sm" style="margin-bottom:8px">
+    <div class="history-filters" style="display:flex;gap:8px;align-items:center">
+      <input id="h-search-exp" type="text" placeholder="Search expenses…"
+        style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
+               padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"
+        oninput="renderHistory()">
+      <select id="h-filter-exp" onchange="renderHistory()"
+        style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
+               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none">
+        <option value="">All cats</option>
+        <option>Food</option><option>Transport</option>
+        <option>Bills</option><option>Shopping</option><option>Health</option>
+        <option>Entertainment</option><option>Stock</option>
+<option>Aura Silver</option><option>Petrol</option><option>Parking</option><option>Other</option>
+
+      </select>
+    </div>
+  </div>
+
+  <div class="card card-sm" id="hist-exp-list"></div>
+
+  <div class="divider"></div>
+  <div class="sec-title">Monthly Expense Summary</div>
+  <div class="card card-sm">
+    <table class="month-table" id="monthly-table">
+      <thead><tr><th>Month</th><th>Entries</th><th>Total</th></tr></thead>
+      <tbody id="monthly-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PANEL — EXPORT
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="p-export" class="panel">
+
+  <div class="sec-title">Export Data</div>
+
+  <div class="card">
+    <p style="font-size:.83rem;color:var(--ink2);line-height:1.6;margin-bottom:16px">
+      Download CSV files — paste directly into your Excel sheets or import into Google Sheets / OneDrive.
+    </p>
+
+    <button class="btn-export pine" onclick="exportActivities()">
+      <span class="btn-icon">📋</span>
+      Export Activities CSV
+    </button>
+    <button class="btn-export amber" onclick="exportExpenses()">
+      <span class="btn-icon">💰</span>
+      Export Expenses CSV
+    </button>
+  </div>
+
+  <div class="sec-title">Summary Stats</div>
+  <div class="card card-sm" id="stats-card" style="font-size:.85rem;line-height:2;color:var(--ink2)"></div>
+
+  <div class="sec-title">Data Management</div>
+  <div class="card card-sm">
+    <p style="font-size:.8rem;color:var(--ink3);margin-bottom:12px;line-height:1.5">
+      Clear all stored data permanently. Download your CSV backup first.
+    </p>
+    <button class="btn-export" style="border-color:var(--rose);background:var(--rose-l);color:var(--rose)"
+      onclick="clearAll()">
+      <span class="btn-icon">🗑</span> Clear All Data
+    </button>
+  </div>
+
+</div>
+
+<script defer src="script.js"></script>
+</body>
+</html>
