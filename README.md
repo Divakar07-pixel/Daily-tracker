@@ -14,25 +14,90 @@ A web app for tracking daily activities and expenses with charts and history.
 
 ## Deployment
 
-### Option 1: Railway (Recommended - Free)
+### Option 1: Railway (Free Trial - Then Paid)
 
-1. **Create Railway Account**: Go to [railway.app](https://railway.app) and sign up
-2. **Create Database**: Add MySQL database to your project
+**Railway offers a generous free tier:**
+- $5/month credit for new users
+- MySQL database included
+- Automatic deployments from GitHub
+
+**After trial:** ~$5-10/month for basic usage
+
+### Option 2: Render (Free Forever!)
+
+**Render is completely free for small projects:**
+- 750 hours/month free
+- PostgreSQL database (free tier available)
+- Automatic deployments from GitHub
+- No credit card required
+
+### Option 3: Fly.io (Free Tier Available)
+
+**Fly.io free tier:**
+- 3 shared CPU VMs
+- 256MB RAM per VM
+- 160GB outbound data/month
+- SQLite or external databases
+
+### Option 4: Vercel + PlanetScale (Free Forever!)
+
+**Vercel (Frontend) + PlanetScale (Database):**
+- Vercel: Free forever for static sites
+- PlanetScale: 1 database, 1GB storage free
+- Great for full-stack apps
+
+### Option 5: Supabase (Free Forever!)
+
+**Supabase free tier:**
+- PostgreSQL database
+- 500MB database size
+- 50MB file storage
+- 2GB bandwidth
+- Real-time features included
+
+### Recommended: Render (Easiest Free Option)
+
+1. **Create Render Account**: Go to [render.com](https://render.com) and sign up (no credit card needed)
+2. **Create PostgreSQL Database**:
+   - Click "New" → "PostgreSQL"
+   - Choose free tier
+   - Note the connection details
 3. **Deploy Backend**:
-   - Connect your GitHub repository
-   - Railway will auto-detect Node.js and deploy
-   - Set environment variables in Railway dashboard:
+   - Click "New" → "Web Service"
+   - Connect your GitHub repo
+   - Set build command: `npm install`
+   - Set start command: `npm start`
+   - Add environment variables:
      ```
-     MYSQLHOST=your-railway-mysql-host
-     MYSQLUSER=root
-     MYSQLPASSWORD=your-password
-     MYSQLDATABASE=railway
-     MYSQLPORT=3306
+     DB_HOST=your-render-postgres-host
+     DB_USER=your-db-user
+     DB_PASSWORD=your-db-password
+     DB_NAME=your-db-name
+     DB_PORT=5432
      ```
-4. **Update Frontend**: In `script.js`, replace the API_BASE URL with your Railway backend URL
-5. **Deploy Frontend**: GitHub Pages already serves the frontend
+4. **Update Frontend**: Replace API_BASE URL in `script.js` with your Render backend URL
 
-### Option 2: Local Development
+### For Render (PostgreSQL):
+
+If using Render's PostgreSQL, install `pg` instead of `mysql2`:
+
+```bash
+npm uninstall mysql2
+npm install pg
+```
+
+Then update the database connection in `server.js`:
+
+```javascript
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Update all db.query calls to use pool.query
+```
 
 ### Prerequisites
 
