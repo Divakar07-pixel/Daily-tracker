@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    CONFIGURATION
 ═══════════════════════════════════════════════════════════════════════════ */
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : 'https://daily-tracker-backend-production.up.railway.app'; // Update this with your deployed backend URL
 const ACT_CATS = ['Work','Learning','Exercise','Personal','Health','Social','Creative','Other'];
 const EXP_CATS = ['Food','Transport','Bills','Shopping','Health','Entertainment','Stock','Aura Silver','Petrol','Parking','Other'];
 
@@ -25,8 +28,8 @@ let acts = [], exps = [];
 async function load(){
   try {
     const [actRes, expRes] = await Promise.all([
-      fetch('http://localhost:3000/api/activities'),
-      fetch('http://localhost:3000/api/expenses')
+      fetch(`${API_BASE}/api/activities`),
+      fetch(`${API_BASE}/api/expenses`)
     ]);
     acts = await actRes.json();
     exps = await expRes.json();
@@ -133,7 +136,7 @@ async function saveActivity(){
   };
 
   try {
-    const res = await fetch('http://localhost:3000/api/activities', {
+    const res = await fetch(`${API_BASE}/api/activities`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(activity)
@@ -181,7 +184,7 @@ async function saveExpense(){
     notes: document.getElementById('e-notes').value.trim(),
   });
   try {
-    const res = await fetch('http://localhost:3000/api/expenses', {
+    const res = await fetch(`${API_BASE}/api/expenses`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -216,7 +219,7 @@ async function saveExpense(){
 ═══════════════════════════════════════════════════════════════════════════ */
 async function delAct(id){
   try {
-    const res = await fetch(`http://localhost:3000/api/activities/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/api/activities/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete activity');
     await load(); // Reload data
     renderAll();
@@ -229,7 +232,7 @@ async function delAct(id){
 
 async function delExp(id){
   try {
-    const res = await fetch(`http://localhost:3000/api/expenses/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete expense');
     await load(); // Reload data
     renderAll();
@@ -624,7 +627,7 @@ function renderExportStats(){
 async function loadDailySummary(date = null) {
   const summaryDate = date || today();
   try {
-    const res = await fetch(`http://localhost:3000/api/daily-summary/${summaryDate}`);
+    const res = await fetch(`${API_BASE}/api/daily-summary/${summaryDate}`);
     if (!res.ok) throw new Error('Failed to load daily summary');
     const data = await res.json();
     renderDailySummary(data);

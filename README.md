@@ -9,9 +9,30 @@ A web app for tracking daily activities and expenses with charts and history.
 - View dashboard with KPIs and charts
 - Search and filter history
 - Export data to CSV
+- Daily summary reports
 - Responsive design for mobile and desktop
 
-## Setup
+## Deployment
+
+### Option 1: Railway (Recommended - Free)
+
+1. **Create Railway Account**: Go to [railway.app](https://railway.app) and sign up
+2. **Create Database**: Add MySQL database to your project
+3. **Deploy Backend**:
+   - Connect your GitHub repository
+   - Railway will auto-detect Node.js and deploy
+   - Set environment variables in Railway dashboard:
+     ```
+     MYSQLHOST=your-railway-mysql-host
+     MYSQLUSER=root
+     MYSQLPASSWORD=your-password
+     MYSQLDATABASE=railway
+     MYSQLPORT=3306
+     ```
+4. **Update Frontend**: In `script.js`, replace the API_BASE URL with your Railway backend URL
+5. **Deploy Frontend**: GitHub Pages already serves the frontend
+
+### Option 2: Local Development
 
 ### Prerequisites
 
@@ -25,7 +46,7 @@ A web app for tracking daily activities and expenses with charts and history.
    ```env
    DB_HOST=localhost
    DB_USER=root
-   DB_PASSWORD=Divakar@07
+   DB_PASSWORD=your_password
    DB_NAME=daily_tracker
    PORT=3000
    ```
