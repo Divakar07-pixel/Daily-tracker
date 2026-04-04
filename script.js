@@ -3,7 +3,7 @@
 ═══════════════════════════════════════════════════════════════════════════ */
 const API_BASE = window.location.hostname === 'localhost' 
   ? 'http://localhost:3000' 
-  : 'https://daily-tracker-backend-production.up.railway.app'; // Update this with your deployed backend URL
+  : 'https://daily-tracker-backend.onrender.com'; // ← Replace with your actual Render backend URL
 const ACT_CATS = ['Work','Learning','Exercise','Personal','Health','Social','Creative','Other'];
 const EXP_CATS = ['Food','Transport','Bills','Shopping','Health','Entertainment','Stock','Aura Silver','Petrol','Parking','Other'];
 
