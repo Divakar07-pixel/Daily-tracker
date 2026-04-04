@@ -25,7 +25,7 @@ A web app for tracking daily activities and expenses with charts and history.
    ```env
    DB_HOST=localhost
    DB_USER=root
-   DB_PASSWORD=Divakar@07
+   DB_PASSWORD=*******
    DB_NAME=daily_tracker
    PORT=3000
    ```
