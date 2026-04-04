@@ -20,8 +20,12 @@ A web app for tracking daily activities and expenses with charts and history.
 
 ### Backend Setup
 
-1. Create a MySQL database named `daily_tracker`
-2. Update MySQL credentials in `backend/server.js` if needed (default: root user, no password)
+1. Install MySQL and make sure the server is running.
+2. Update MySQL credentials in `backend/server.js` or set env vars:
+   - `DB_HOST`
+   - `DB_USER`
+   - `DB_PASSWORD`
+   - `DB_NAME`
 3. Install backend dependencies:
    ```
    cd backend
@@ -31,7 +35,7 @@ A web app for tracking daily activities and expenses with charts and history.
    ```
    npm start
    ```
-   Server runs on http://localhost:3000
+   The server will create the `daily_tracker` database and tables automatically, then run on http://localhost:3000
 
 ### Frontend
 
