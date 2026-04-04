@@ -31,6 +31,48 @@ A web app for tracking daily activities and expenses with charts and history.
 - Automatic deployments from GitHub
 - No credit card required
 
+**Step-by-Step Setup:**
+
+1. **Create Render Account**: Go to [render.com](https://render.com) and sign up (free, no credit card)
+
+2. **Create PostgreSQL Database**:
+   - Click "New" → "PostgreSQL"
+   - Name: `daily-tracker-db`
+   - Choose **Free** tier
+   - Click "Create Database"
+   - **Copy the connection details** (you'll need them later)
+
+3. **Create Web Service**:
+   - Click "New" → "Web Service"
+   - Connect your GitHub repo: `Divakar07-pixel/Daily-tracker`
+   - **Root Directory**: `backend` (important!)
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+
+4. **Set Environment Variables**:
+   - In your web service settings, add:
+     ```
+     DATABASE_URL = [paste your PostgreSQL connection string from step 2]
+     NODE_ENV = production
+     ```
+   - The DATABASE_URL should look like: `postgresql://user:password@host:port/database`
+
+5. **Deploy**: Click "Create Web Service" - Render will build and deploy automatically!
+
+6. **Update Frontend**: 
+   - Once deployed, copy your backend URL (e.g., `https://daily-tracker-backend.onrender.com`)
+   - Update `script.js` line 6: Replace the placeholder with your actual Render URL:
+     ```javascript
+     const API_BASE = window.location.hostname === 'localhost' 
+       ? 'http://localhost:3000' 
+       : 'https://your-backend-url.onrender.com';
+     ```
+
+7. **Test**: Your app will now work on both localhost and GitHub Pages!
+
+**PostgreSQL Password**: Render automatically generates a secure password for your database. You can find it in the database connection details - no need to remember it, just copy the full DATABASE_URL.
+
 ### Option 3: Fly.io (Free Tier Available)
 
 **Fly.io free tier:**

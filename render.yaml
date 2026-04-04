@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: daily-tracker-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: daily-tracker-db
+    runtime: postgres
+    envVars:
+      - key: POSTGRES_DB
+        value: daily_tracker
+      - key: POSTGRES_USER
+        value: daily_tracker_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true

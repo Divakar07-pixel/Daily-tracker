@@ -1,8 +1,32 @@
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+
+// Database setup - supports both MySQL and PostgreSQL
+let db;
+let dbType = 'mysql'; // default to mysql
+
+if (process.env.DATABASE_URL) {
+  // Render PostgreSQL
+  const { Pool } = require('pg');
+  db = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  dbType = 'postgres';
+} else {
+  // Local MySQL
+  const mysql = require('mysql2');
+  const dbConfig = {
+    host: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
+    user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
+    database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'daily_tracker',
+    port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
+  };
+  db = mysql.createConnection(dbConfig);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,60 +35,101 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// MySQL Connection
-const dbConfig = {
-  host: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
-  user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
-  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
-  database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'daily_tracker',
-  port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
+// Database initialization
+const initDb = () => {
+  if (dbType === 'postgres') {
+    // PostgreSQL setup
+    return db.connect((err) => {
+      if (err) {
+        console.error('Error connecting to PostgreSQL:', err);
+        return;
+      }
+      console.log('Connected to PostgreSQL');
+
+      // Create tables
+      db.query(`
+        CREATE TABLE IF NOT EXISTS activities (
+          id SERIAL PRIMARY KEY,
+          date DATE,
+          time TIME,
+          name VARCHAR(255),
+          category VARCHAR(100),
+          duration DECIMAL(5,2),
+          status VARCHAR(50),
+          notes TEXT
+        )
+      `, (err) => {
+        if (err) console.error('Error creating activities table:', err);
+      });
+
+      db.query(`
+        CREATE TABLE IF NOT EXISTS expenses (
+          id SERIAL PRIMARY KEY,
+          date DATE,
+          name VARCHAR(255),
+          category VARCHAR(100),
+          amount DECIMAL(10,2),
+          mode VARCHAR(50),
+          notes TEXT
+        )
+      `, (err) => {
+        if (err) console.error('Error creating expenses table:', err);
+      });
+
+      app.locals.db = db;
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    });
+  } else {
+    // MySQL setup
+    db.connect((err) => {
+      if (err) {
+        console.error('Error connecting to MySQL:', err);
+        return;
+      }
+      console.log('Connected to MySQL');
+
+      // Create tables
+      db.query(`
+        CREATE TABLE IF NOT EXISTS activities (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          date DATE,
+          time TIME,
+          name VARCHAR(255),
+          category VARCHAR(100),
+          duration DECIMAL(5,2),
+          status VARCHAR(50),
+          notes TEXT
+        )
+      `, (err) => {
+        if (err) console.error('Error creating activities table:', err);
+      });
+
+      db.query(`
+        CREATE TABLE IF NOT EXISTS expenses (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          date DATE,
+          name VARCHAR(255),
+          category VARCHAR(100),
+          amount DECIMAL(10,2),
+          mode VARCHAR(50),
+          notes TEXT
+        )
+      `, (err) => {
+        if (err) console.error('Error creating expenses table:', err);
+      });
+
+      app.locals.db = db;
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    });
+  }
 };
 
-const initDb = mysql.createConnection(dbConfig);
-initDb.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL server:', err);
-    return;
-  }
-
-  // Create tables if they don't exist
-  initDb.query(`
-    CREATE TABLE IF NOT EXISTS activities (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      date DATE,
-      time TIME,
-      name VARCHAR(255),
-      category VARCHAR(100),
-      duration DECIMAL(5,2),
-      status VARCHAR(50),
-      notes TEXT
-    )
-  `, (err) => {
-    if (err) console.error('Error creating activities table:', err);
-  });
-
-  initDb.query(`
-    CREATE TABLE IF NOT EXISTS expenses (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      date DATE,
-      name VARCHAR(255),
-      category VARCHAR(100),
-      amount DECIMAL(10,2),
-      mode VARCHAR(50),
-      notes TEXT
-    )
-  `, (err) => {
-    if (err) console.error('Error creating expenses table:', err);
-  });
-
-  console.log('Connected to MySQL database');
-  app.locals.db = initDb;
-
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-});
+// Initialize database
+initDb();
 
 function getDb() {
   return app.locals.db;
