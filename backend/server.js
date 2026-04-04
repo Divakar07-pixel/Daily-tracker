@@ -1,10 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -154,5 +155,70 @@ app.delete('/api/expenses/:id', (req, res) => {
   db.query('DELETE FROM expenses WHERE id = ?', [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Deleted' });
+  });
+});
+
+// Daily summary
+app.get('/api/daily-summary/:date?', (req, res) => {
+  const db = getDb();
+  if (!db) return res.status(500).json({ error: 'Database not initialized' });
+
+  const date = req.params.date || new Date().toISOString().slice(0, 10);
+
+  // Get activities for the date
+  db.query('SELECT * FROM activities WHERE date = ? ORDER BY time ASC', [date], (err, activities) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    // Get expenses for the date
+    db.query('SELECT * FROM expenses WHERE date = ?', [date], (err, expenses) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // Calculate summary stats
+      const totalActivities = activities.length;
+      const completedActivities = activities.filter(a => a.status === 'Completed').length;
+      const totalHours = activities.reduce((sum, a) => sum + (parseFloat(a.duration) || 0), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+      // Category breakdowns
+      const activityCategories = {};
+      activities.forEach(a => {
+        activityCategories[a.category] = (activityCategories[a.category] || 0) + (parseFloat(a.duration) || 0);
+      });
+
+      const expenseCategories = {};
+      expenses.forEach(e => {
+        expenseCategories[e.category] = (expenseCategories[e.category] || 0) + parseFloat(e.amount);
+      });
+
+      res.json({
+        date,
+        summary: {
+          totalActivities,
+          completedActivities,
+          totalHours: Math.round(totalHours * 100) / 100,
+          totalExpenses: Math.round(totalExpenses * 100) / 100,
+          completionRate: totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0
+        },
+        activities,
+        expenses,
+        activityCategories,
+        expenseCategories
+      });
+    });
+  });
+});
+
+// Clear all data
+app.delete('/api/clear-all', (req, res) => {
+  const db = getDb();
+  if (!db) return res.status(500).json({ error: 'Database not initialized' });
+
+  db.query('DELETE FROM activities', (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    db.query('DELETE FROM expenses', (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'All data cleared successfully' });
+    });
   });
 });

@@ -21,11 +21,16 @@ A web app for tracking daily activities and expenses with charts and history.
 ### Backend Setup
 
 1. Install MySQL and make sure the server is running.
-2. Update MySQL credentials in `backend/server.js` or set env vars:
-   - `DB_HOST`
-   - `DB_USER`
-   - `DB_PASSWORD`
-   - `DB_NAME`
+2. Create a `.env` file inside the `backend` folder with your MySQL credentials:
+   ```env
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=Divakar@07
+   DB_NAME=daily_tracker
+   PORT=3000
+   ```
+
+   Or set env vars directly on your system.
 3. Install backend dependencies:
    ```
    cd backend

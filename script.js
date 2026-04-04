@@ -543,6 +543,9 @@ function renderDash(){
     }).join('');
   }
 
+  // Load daily summary
+  loadDailySummary();
+
   renderAllCharts(todayActs, monthExps);
 }
 
@@ -616,6 +619,70 @@ function renderExportStats(){
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   DAILY SUMMARY
+═══════════════════════════════════════════════════════════════════════════ */
+async function loadDailySummary(date = null) {
+  const summaryDate = date || today();
+  try {
+    const res = await fetch(`http://localhost:3000/api/daily-summary/${summaryDate}`);
+    if (!res.ok) throw new Error('Failed to load daily summary');
+    const data = await res.json();
+    renderDailySummary(data);
+  } catch(e) {
+    console.error('Error loading daily summary:', e);
+    document.getElementById('daily-summary-content').innerHTML =
+      '<div class="empty"><div class="empty-icon">❌</div><div class="empty-txt">Error loading summary</div></div>';
+  }
+}
+
+function renderDailySummary(data) {
+  const content = document.getElementById('daily-summary-content');
+  const s = data.summary;
+
+  if (s.totalActivities === 0 && s.totalExpenses === 0) {
+    content.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-txt">No data for today yet</div></div>';
+    return;
+  }
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+  html += `<div class="kpi pine" style="margin:0"><div class="kpi-val">${s.totalActivities}</div><div class="kpi-lbl">Activities</div></div>`;
+  html += `<div class="kpi sky" style="margin:0"><div class="kpi-val">${s.completedActivities}</div><div class="kpi-lbl">Completed</div></div>`;
+  html += `<div class="kpi amber" style="margin:0"><div class="kpi-val">${s.totalHours}h</div><div class="kpi-lbl">Hours</div></div>`;
+  html += `<div class="kpi rose" style="margin:0"><div class="kpi-val">${fmtAmt(s.totalExpenses)}</div><div class="kpi-lbl">Spent</div></div>`;
+  html += '</div>';
+
+  if (s.completionRate > 0) {
+    html += `<div style="text-align:center;margin:12px 0;font-size:.9rem;color:var(--ink2)">
+      <strong>${s.completionRate}%</strong> of activities completed today
+    </div>`;
+  }
+
+  // Activity categories
+  if (Object.keys(data.activityCategories).length > 0) {
+    html += '<div style="margin-top:16px"><strong style="font-size:.85rem;color:var(--ink2)">Activity Time by Category:</strong>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+    Object.entries(data.activityCategories).forEach(([cat, hours]) => {
+      const color = CAT_COLORS[cat] || '#64748b';
+      html += `<span style="background:${color}20;color:${color};padding:4px 8px;border-radius:12px;font-size:.75rem;font-weight:500">${cat}: ${hours}h</span>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Expense categories
+  if (Object.keys(data.expenseCategories).length > 0) {
+    html += '<div style="margin-top:12px"><strong style="font-size:.85rem;color:var(--ink2)">Spending by Category:</strong>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+    Object.entries(data.expenseCategories).forEach(([cat, amount]) => {
+      const color = CAT_COLORS[cat] || '#64748b';
+      html += `<span style="background:${color}20;color:${color};padding:4px 8px;border-radius:12px;font-size:.75rem;font-weight:500">${cat}: ${fmtAmt(amount)}</span>`;
+    });
+    html += '</div></div>';
+  }
+
+  content.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    RENDER ALL
 ═══════════════════════════════════════════════════════════════════════════ */
 function renderAll(){
@@ -671,10 +738,19 @@ function downloadCSV(csv, filename){
 /* ═══════════════════════════════════════════════════════════════════════════
    CLEAR ALL
 ═══════════════════════════════════════════════════════════════════════════ */
-function clearAll(){
+async function clearAll(){
   if(!confirm('⚠️ Delete ALL activities and expenses? This cannot be undone.\n\nDownload your CSV first!')) return;
-  acts=[]; exps=[];
-  persist(); renderAll(); showToast('🗑 All data cleared');
+
+  try {
+    const res = await fetch('http://localhost:3000/api/clear-all', { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear data');
+    await load(); // Reload data
+    renderAll();
+    showToast('🗑 All data cleared');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Error clearing data');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
