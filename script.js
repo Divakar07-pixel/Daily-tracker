@@ -22,13 +22,23 @@ const SK_ECAT = 'mdt_ecat_recent';
 ═══════════════════════════════════════════════════════════════════════════ */
 let acts = [], exps = [];
 
-function load(){
-  try{ acts = JSON.parse(localStorage.getItem(SK_ACT)||'[]'); }catch(e){ acts=[]; }
-  try{ exps = JSON.parse(localStorage.getItem(SK_EXP)||'[]'); }catch(e){ exps=[]; }
+async function load(){
+  try {
+    const [actRes, expRes] = await Promise.all([
+      fetch('http://localhost:3000/api/activities'),
+      fetch('http://localhost:3000/api/expenses')
+    ]);
+    acts = await actRes.json();
+    exps = await expRes.json();
+  } catch(e) {
+    console.error('Error loading data:', e);
+    acts = [];
+    exps = [];
+  }
 }
+
 function persist(){
-  localStorage.setItem(SK_ACT, JSON.stringify(acts));
-  localStorage.setItem(SK_EXP, JSON.stringify(exps));
+  // No longer needed, data is saved to DB via API
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -105,15 +115,14 @@ function initPills(){
 /* ═══════════════════════════════════════════════════════════════════════════
    SAVE ACTIVITY
 ═══════════════════════════════════════════════════════════════════════════ */
-function saveActivity(){
+async function saveActivity(){
   const name = document.getElementById('a-name').value.trim();
   if(!name){ document.getElementById('a-name').focus(); showToast('⚠️ Enter activity name'); return; }
 
   const cat = document.getElementById('a-cat').value;
   pushRecentCat(SK_ACAT, cat, ACT_CATS);
 
-  acts.unshift({
-    id: Date.now(),
+  const activity = {
     date: document.getElementById('a-date').value || today(),
     time: document.getElementById('a-time').value || nowTime(),
     name,
@@ -121,8 +130,21 @@ function saveActivity(){
     duration: parseFloat(document.getElementById('a-dur').value)||0,
     status: document.getElementById('a-status').value,
     notes: document.getElementById('a-notes').value.trim(),
-  });
-  persist();
+  };
+
+  try {
+    const res = await fetch('http://localhost:3000/api/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activity)
+    });
+    if (!res.ok) throw new Error('Failed to save activity');
+    await load(); // Reload data
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Error saving activity');
+    return;
+  }
 
   // reset
   document.getElementById('a-name').value='';
@@ -140,7 +162,7 @@ function saveActivity(){
 /* ═══════════════════════════════════════════════════════════════════════════
    SAVE EXPENSE
 ═══════════════════════════════════════════════════════════════════════════ */
-function saveExpense(){
+async function saveExpense(){
   const name = document.getElementById('e-name').value.trim();
   const amt  = parseFloat(document.getElementById('e-amt').value);
   if(!name){ document.getElementById('e-name').focus(); showToast('⚠️ Enter expense name'); return; }
@@ -158,7 +180,26 @@ function saveExpense(){
     mode: document.getElementById('e-mode').value,
     notes: document.getElementById('e-notes').value.trim(),
   });
-  persist();
+  try {
+    const res = await fetch('http://localhost:3000/api/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: document.getElementById('e-date').value || today(),
+        name,
+        category: cat,
+        amount: amt,
+        mode: document.getElementById('e-mode').value,
+        notes: document.getElementById('e-notes').value.trim(),
+      })
+    });
+    if (!res.ok) throw new Error('Failed to save expense');
+    await load(); // Reload data
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Error saving expense');
+    return;
+  }
 
   document.getElementById('e-name').value='';
   document.getElementById('e-amt').value='';
@@ -173,8 +214,31 @@ function saveExpense(){
 /* ═══════════════════════════════════════════════════════════════════════════
    DELETE
 ═══════════════════════════════════════════════════════════════════════════ */
-function delAct(id){ acts=acts.filter(a=>a.id!==id); persist(); renderAll(); showToast('Deleted'); }
-function delExp(id){ exps=exps.filter(e=>e.id!==id); persist(); renderAll(); showToast('Deleted'); }
+async function delAct(id){
+  try {
+    const res = await fetch(`http://localhost:3000/api/activities/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete activity');
+    await load(); // Reload data
+    renderAll();
+    showToast('Deleted');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Error deleting activity');
+  }
+}
+
+async function delExp(id){
+  try {
+    const res = await fetch(`http://localhost:3000/api/expenses/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete expense');
+    await load(); // Reload data
+    renderAll();
+    showToast('Deleted');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Error deleting expense');
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    RENDER HELPERS
@@ -616,8 +680,8 @@ function clearAll(){
 /* ═══════════════════════════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════════════════════════ */
-function init(){
-  load();
+async function init(){
+  await load();
 
   // set defaults
   document.getElementById('a-date').value = today();
@@ -637,4 +701,4 @@ function init(){
 }
 
 // DOM ready
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => init());
