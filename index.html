@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -11,6 +11,77 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+  import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
+  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, where, deleteDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA7B23Uc7QPqUBPFq4JS9mKMQEuRVSjfRA",
+    authDomain: "mydailytracker-c9321.firebaseapp.com",
+    projectId: "mydailytracker-c9321",
+    storageBucket: "mydailytracker-c9321.firebasestorage.app",
+    messagingSenderId: "367515209528",
+    appId: "1:367515209528:web:c712e6336f49f051c17bcd",
+    measurementId: "G-97EJ2XE5F0"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // Make db available globally
+  window.db = db;
+  window.collection = collection;
+  window.addDoc = addDoc;
+  window.getDocs = getDocs;
+  window.onSnapshot = onSnapshot;
+  window.query = query;
+  window.orderBy = orderBy;
+  window.where = where;
+  window.deleteDoc = deleteDoc;
+  window.doc = doc;
+  window.analytics = analytics;
+
+  function getTodayDate() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function formatRupee(val) {
+    return '₹' + Number(val || 0).toLocaleString('en-IN');
+  }
+
+  async function loadDashboard() {
+    const today = getTodayDate();
+    const ref = doc(db, 'daily', today);
+    const snap = await getDoc(ref);
+
+    const activitiesEl = document.getElementById('activities');
+    const timeEl = document.getElementById('time');
+    const amountEl = document.getElementById('amount');
+
+    if (!activitiesEl || !timeEl || !amountEl) {
+      console.error('Required dashboard elements are missing.');
+      return;
+    }
+
+    if (!snap.exists()) {
+      activitiesEl.innerText = '0';
+      timeEl.innerText = '0h';
+      amountEl.innerText = formatRupee(0);
+      return;
+    }
+
+    const data = snap.data();
+    activitiesEl.innerText = data.activities ?? 0;
+    timeEl.innerText = data.time ?? '0h';
+    amountEl.innerText = formatRupee(data.amount ?? 0);
+  }
+
+  window.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
 </head>
 <body>
 
@@ -269,7 +340,7 @@
         oninput="renderHistory()">
       <select id="h-filter-act" onchange="renderHistory()"
         style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
-               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none">
+               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none">
         <option value="">All cats</option>
         <option>Work</option><option>Learning</option>
         <option>Exercise</option><option>Personal</option><option>Other</option>
@@ -290,7 +361,7 @@
         oninput="renderHistory()">
       <select id="h-filter-exp" onchange="renderHistory()"
         style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;
-               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none">
+               padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none">
         <option value="">All cats</option>
         <option>Food</option><option>Transport</option>
         <option>Bills</option><option>Shopping</option><option>Health</option>

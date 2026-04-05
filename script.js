@@ -1,9 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    CONFIGURATION
 ═══════════════════════════════════════════════════════════════════════════ */
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : 'https://daily-tracker-backend.onrender.com'; // ← Replace with your actual Render backend URL
 const ACT_CATS = ['Work','Learning','Exercise','Personal','Health','Social','Creative','Other'];
 const EXP_CATS = ['Food','Transport','Bills','Shopping','Health','Entertainment','Stock','Aura Silver','Petrol','Parking','Other'];
 
@@ -15,8 +12,6 @@ const CAT_COLORS = {
   Parking:'#f59e0b',
 };
 
-const SK_ACT = 'mdt_acts_v1';
-const SK_EXP = 'mdt_exps_v1';
 const SK_ACAT = 'mdt_acat_recent';
 const SK_ECAT = 'mdt_ecat_recent';
 
@@ -24,24 +19,24 @@ const SK_ECAT = 'mdt_ecat_recent';
    STATE
 ═══════════════════════════════════════════════════════════════════════════ */
 let acts = [], exps = [];
+let unsubscribeActs, unsubscribeExps;
 
 async function load(){
-  try {
-    const [actRes, expRes] = await Promise.all([
-      fetch(`${API_BASE}/api/activities`),
-      fetch(`${API_BASE}/api/expenses`)
-    ]);
-    acts = await actRes.json();
-    exps = await expRes.json();
-  } catch(e) {
-    console.error('Error loading data:', e);
-    acts = [];
-    exps = [];
-  }
+  // Real-time listeners for activities
+  unsubscribeActs = onSnapshot(collection(db, 'activities'), (snapshot) => {
+    acts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderAll();
+  });
+
+  // Real-time listeners for expenses
+  unsubscribeExps = onSnapshot(collection(db, 'expenses'), (snapshot) => {
+    exps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderAll();
+  });
 }
 
 function persist(){
-  // No longer needed, data is saved to DB via API
+  // No longer needed, data is saved to Firestore
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -136,13 +131,8 @@ async function saveActivity(){
   };
 
   try {
-    const res = await fetch(`${API_BASE}/api/activities`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(activity)
-    });
-    if (!res.ok) throw new Error('Failed to save activity');
-    await load(); // Reload data
+    await addDoc(collection(db, 'activities'), activity);
+    showToast('✅ Activity saved!');
   } catch(e) {
     console.error(e);
     showToast('❌ Error saving activity');
@@ -159,7 +149,6 @@ async function saveActivity(){
 
   initPills();
   renderAll();
-  showToast('✅ Activity saved!');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -174,30 +163,18 @@ async function saveExpense(){
   const cat = document.getElementById('e-cat').value;
   pushRecentCat(SK_ECAT, cat, EXP_CATS);
 
-  exps.unshift({
-    id: Date.now(),
+  const expense = {
     date: document.getElementById('e-date').value || today(),
     name,
     category: cat,
     amount: amt,
     mode: document.getElementById('e-mode').value,
     notes: document.getElementById('e-notes').value.trim(),
-  });
+  };
+
   try {
-    const res = await fetch(`${API_BASE}/api/expenses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: document.getElementById('e-date').value || today(),
-        name,
-        category: cat,
-        amount: amt,
-        mode: document.getElementById('e-mode').value,
-        notes: document.getElementById('e-notes').value.trim(),
-      })
-    });
-    if (!res.ok) throw new Error('Failed to save expense');
-    await load(); // Reload data
+    await addDoc(collection(db, 'expenses'), expense);
+    showToast('💰 Expense saved!');
   } catch(e) {
     console.error(e);
     showToast('❌ Error saving expense');
@@ -211,7 +188,6 @@ async function saveExpense(){
 
   initPills();
   renderAll();
-  showToast('💰 Expense saved!');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -219,10 +195,7 @@ async function saveExpense(){
 ═══════════════════════════════════════════════════════════════════════════ */
 async function delAct(id){
   try {
-    const res = await fetch(`${API_BASE}/api/activities/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete activity');
-    await load(); // Reload data
-    renderAll();
+    await deleteDoc(doc(db, 'activities', id));
     showToast('Deleted');
   } catch(e) {
     console.error(e);
@@ -232,10 +205,7 @@ async function delAct(id){
 
 async function delExp(id){
   try {
-    const res = await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete expense');
-    await load(); // Reload data
-    renderAll();
+    await deleteDoc(doc(db, 'expenses', id));
     showToast('Deleted');
   } catch(e) {
     console.error(e);
