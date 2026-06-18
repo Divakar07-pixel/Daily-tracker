@@ -2,6 +2,9 @@
 
 A web app for tracking daily activities and expenses with charts and history.
 
+https://divakar07-pixel.github.io/Daily-tracker/
+
+
 ## Features
 
 - Log activities with categories, duration, and status
