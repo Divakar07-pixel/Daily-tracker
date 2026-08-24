@@ -13,7 +13,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-  import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
   import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, where, deleteDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -27,7 +26,6 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
   window.db = db;
@@ -41,36 +39,6 @@
   window.deleteDoc = deleteDoc;
   window.doc = doc;
   window.getDoc = getDoc;
-  window.analytics = analytics;
-
-  function getTodayDate() { return new Date().toISOString().slice(0, 10); }
-  function formatRupee(val) { return '₹' + Number(val || 0).toLocaleString('en-IN'); }
-
-  async function loadDashboard() {
-    try {
-      const today = getTodayDate();
-      const ref = doc(db, 'daily', today);
-      const snap = await getDoc(ref);
-      const activitiesEl = document.getElementById('activities');
-      const timeEl = document.getElementById('time');
-      const amountEl = document.getElementById('amount');
-      if (!activitiesEl || !timeEl || !amountEl) return;
-      if (!snap.exists()) {
-        activitiesEl.innerText = '0';
-        timeEl.innerText = '0h';
-        amountEl.innerText = formatRupee(0);
-        return;
-      }
-      const data = snap.data();
-      activitiesEl.innerText = data.activities ?? 0;
-      timeEl.innerText = data.time ?? '0h';
-      amountEl.innerText = formatRupee(data.amount ?? 0);
-    } catch (error) {
-      console.error('Firebase dashboard load failed:', error);
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', loadDashboard);
 </script>
 </head>
 <body>
@@ -98,46 +66,26 @@
 <div id="toast">Saved!</div>
 
 <div id="p-dash" class="panel active">
-
   <p style="font-size:.78rem;color:var(--ink3);margin-bottom:12px;font-weight:500" id="dash-date"></p>
-
   <div class="sec-title">Today at a Glance</div>
-
   <div class="kpi-grid">
     <div class="kpi pine"><div class="kpi-val" id="kpi-acts">0</div><div class="kpi-lbl">Activities</div></div>
     <div class="kpi sky"><div class="kpi-val" id="kpi-hours">0h</div><div class="kpi-lbl">Time Logged</div></div>
     <div class="kpi amber"><div class="kpi-val" id="kpi-exp-today">₹0</div><div class="kpi-lbl">Spent Today</div></div>
     <div class="kpi rose"><div class="kpi-val" id="kpi-exp-month">₹0</div><div class="kpi-lbl">This Month</div></div>
   </div>
-
   <div class="sec-title">Daily Summary</div>
-  <div class="card card-sm" id="daily-summary-card">
-    <div id="daily-summary-content"><div class="empty"><div class="empty-icon">📊</div><div class="empty-txt">Loading daily summary...</div></div></div>
-  </div>
-
+  <div class="card card-sm" id="daily-summary-card"><div id="daily-summary-content"><div class="empty"><div class="empty-icon">📊</div><div class="empty-txt">Loading daily summary...</div></div></div></div>
   <div class="charts-row">
-    <div class="chart-card" style="padding:14px">
-      <div class="chart-header"><div class="chart-title">💰 Spending <span class="chart-sub">by category</span></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chart-exp-donut"></canvas></div>
-      <div class="chart-legend" id="legend-donut"></div>
-    </div>
-    <div class="chart-card" style="padding:14px">
-      <div class="chart-header"><div class="chart-title">✅ Tasks <span class="chart-sub">completion</span></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chart-completion-ring"></canvas></div>
-      <div style="text-align:center;margin-top:8px"><div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:600;color:var(--pine)" id="completion-pct">—</div><div style="font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Completion Rate</div></div>
-    </div>
+    <div class="chart-card" style="padding:14px"><div class="chart-header"><div class="chart-title">💰 Spending <span class="chart-sub">by category</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-exp-donut"></canvas></div><div class="chart-legend" id="legend-donut"></div></div>
+    <div class="chart-card" style="padding:14px"><div class="chart-header"><div class="chart-title">✅ Tasks <span class="chart-sub">completion</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-completion-ring"></canvas></div><div style="text-align:center;margin-top:8px"><div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:600;color:var(--pine)" id="completion-pct">—</div><div style="font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Completion Rate</div></div></div>
   </div>
-
   <div class="chart-card"><div class="chart-header"><div class="chart-title">📈 Daily Spending <span class="chart-sub">last 7 days</span></div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-spending-line"></canvas></div></div>
   <div class="chart-card"><div class="chart-header"><div class="chart-title">🏷️ Activity Hours <span class="chart-sub">by category</span></div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-act-bar"></canvas></div></div>
   <div class="chart-card"><div class="chart-header"><div class="chart-title">💳 Payment Modes <span class="chart-sub">this month</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-payment-pie"></canvas></div><div class="chart-legend" id="legend-payment"></div></div>
-
-  <div class="sec-title">Recent Activities</div>
-  <div class="card card-sm"><div id="dash-acts"><div class="empty"><div class="empty-icon">🌱</div><div class="empty-txt">No activities yet today.</div></div></div></div>
-  <div class="sec-title">Recent Expenses</div>
-  <div class="card card-sm"><div id="dash-exps"><div class="empty"><div class="empty-icon">💸</div><div class="empty-txt">No expenses yet today.</div></div></div></div>
-  <div class="sec-title">Category Spending</div>
-  <div class="card card-sm"><div id="dash-cat-summary" class="cat-summary"></div></div>
+  <div class="sec-title">Recent Activities</div><div class="card card-sm"><div id="dash-acts"><div class="empty"><div class="empty-icon">🌱</div><div class="empty-txt">No activities yet today.</div></div></div></div>
+  <div class="sec-title">Recent Expenses</div><div class="card card-sm"><div id="dash-exps"><div class="empty"><div class="empty-icon">💸</div><div class="empty-txt">No expenses yet today.</div></div></div></div>
+  <div class="sec-title">Category Spending</div><div class="card card-sm"><div id="dash-cat-summary" class="cat-summary"></div></div>
 </div>
 
 <div id="p-act" class="panel">
@@ -166,12 +114,7 @@
 
 <div id="p-history" class="panel">
   <div class="sec-title">Activity History</div>
-  <div class="card card-sm" style="margin-bottom:8px">
-    <div class="history-filters" style="display:flex;gap:8px;align-items:center">
-      <input id="h-search-act" type="text" placeholder="Search activities…" style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none">
-      <select id="h-filter-act" style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none"><option value="">All cats</option><option>Work</option><option>Learning</option><option>Exercise</option><option>Personal</option><option>Other</option></select>
-    </div>
-  </div>
+  <div class="card card-sm" style="margin-bottom:8px"><div class="history-filters" style="display:flex;gap:8px;align-items:center"><input id="h-search-act" type="text" placeholder="Search activities…" style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"><select id="h-filter-act" style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none"><option value="">All cats</option><option>Work</option><option>Learning</option><option>Exercise</option><option>Personal</option><option>Other</option></select></div></div>
   <div class="card card-sm" id="hist-act-list"></div>
   <div class="divider"></div><div class="sec-title">Expense History</div>
   <div class="card card-sm" style="margin-bottom:8px"><div class="history-filters" style="display:flex;gap:8px;align-items:center"><input id="h-search-exp" type="text" placeholder="Search expenses…" style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"><select id="h-filter-exp" style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none"><option value="">All cats</option><option>Food</option><option>Transport</option><option>Bills</option><option>Shopping</option><option>Health</option><option>Entertainment</option><option>Stock</option><option>Aura Silver</option><option>Petrol</option><option>Parking</option><option>Other</option></select></div></div>
@@ -192,6 +135,6 @@
   <div class="card card-sm"><p style="font-size:.8rem;color:var(--ink3);margin-bottom:12px;line-height:1.5">Clear all stored data permanently. Download your CSV backup first.</p><button type="button" class="btn-export" style="border-color:var(--rose);background:var(--rose-l);color:var(--rose)" id="clearAllBtn"><span class="btn-icon">🗑</span> Clear All Data</button></div>
 </div>
 
-<script defer src="script.js"></script>
+<script defer src="script.js?v=20260824-2"></script>
 </body>
 </html>
