@@ -1,140 +1,129 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#faf7f2">
-<title>My Daily Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, where, deleteDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="A modern personal activity and expense tracker.">
+  <title>Daily Tracker — Personal Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260825-1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA7B23Uc7QPqUBPFq4JS9mKMQEuRVSjfRA",
-    authDomain: "mydailytracker-c9321.firebaseapp.com",
-    projectId: "mydailytracker-c9321",
-    storageBucket: "mydailytracker-c9321.firebasestorage.app",
-    messagingSenderId: "367515209528",
-    appId: "1:367515209528:web:c712e6336f49f051c17bcd",
-    measurementId: "G-97EJ2XE5F0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window.db = db;
-  window.collection = collection;
-  window.addDoc = addDoc;
-  window.getDocs = getDocs;
-  window.onSnapshot = onSnapshot;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.where = where;
-  window.deleteDoc = deleteDoc;
-  window.doc = doc;
-  window.getDoc = getDoc;
-</script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyA7B23Uc7QPqUBPFq4JS9mKMQEuRVSjfRA',
+      authDomain: 'mydailytracker-c9321.firebaseapp.com',
+      projectId: 'mydailytracker-c9321',
+      storageBucket: 'mydailytracker-c9321.firebasestorage.app',
+      messagingSenderId: '367515209528',
+      appId: '1:367515209528:web:c712e6336f49f051c17bcd',
+      measurementId: 'G-97EJ2XE5F0'
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    Object.assign(window,{db,collection,addDoc,onSnapshot,deleteDoc,doc,updateDoc,getDocs});
+  </script>
 </head>
 <body>
-
-<header class="app-header">
-  <div class="header-top">
-    <div class="brand">
-      <div class="brand-mark">📓</div>
-      <div>
-        <div class="brand-name">My Daily Tracker</div>
-        <div class="brand-sub">Activity &amp; Expense Log</div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">✓</div>
+        <div><strong>Daily Tracker</strong><span>Personal workspace</span></div>
       </div>
-    </div>
-    <div id="live-time">--:--</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="dashboard"><span>⌂</span>Dashboard</button>
+        <button class="nav-item" data-view="activities"><span>✓</span>Activities</button>
+        <button class="nav-item" data-view="expenses"><span>₹</span>Expenses</button>
+        <button class="nav-item" data-view="analytics"><span>◔</span>Analytics</button>
+        <button class="nav-item" data-view="history"><span>↺</span>History</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-view="settings"><span>⚙</span>Settings</button>
+        <div class="sync-pill"><i></i><div><b>Cloud synced</b><small>Firestore</small></div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+        <div class="topbar-title"><span id="viewKicker">OVERVIEW</span><h1 id="viewTitle">Good day 👋</h1></div>
+        <div class="top-actions">
+          <span class="clock" id="liveTime">--:--</span>
+          <button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button>
+          <button class="primary-btn compact" id="quickAddBtn">+ Add entry</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-dashboard">
+        <div class="hero-row">
+          <div><div class="eyebrow" id="todayLabel">TODAY</div><h2>Make today count.</h2><p id="daySubtitle">Your activity and spending at a glance.</p></div>
+          <div class="period-tabs" id="dashPeriod"><button class="active" data-period="today">Today</button><button data-period="week">7 days</button><button data-period="month">Month</button></div>
+        </div>
+        <div class="kpi-grid four">
+          <article class="stat-card accent-blue"><div class="stat-icon">✓</div><div><span>Activities</span><strong id="kpiActivities">0</strong><small id="kpiActivityMeta">0 completed</small></div></article>
+          <article class="stat-card accent-green"><div class="stat-icon">◷</div><div><span>Time logged</span><strong id="kpiHours">0h</strong><small id="kpiHoursMeta">Across activities</small></div></article>
+          <article class="stat-card accent-orange"><div class="stat-icon">₹</div><div><span>Spent</span><strong id="kpiSpent">₹0</strong><small id="kpiSpentMeta">Selected period</small></div></article>
+          <article class="stat-card accent-purple"><div class="stat-icon">🔥</div><div><span>Active streak</span><strong id="kpiStreak">0 days</strong><small>Keep going</small></div></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel-card wide"><div class="panel-head"><div><h3>Daily progress</h3><p>Activity completion for the selected period</p></div><span class="progress-number" id="completionNumber">0%</span></div><div class="progress-track"><div id="completionBar"></div></div><div class="progress-meta"><span id="completionText">No activities yet</span><span id="completionHours">0h logged</span></div></article>
+          <article class="panel-card"><div class="panel-head"><div><h3>Spending</h3><p>By category</p></div><button class="text-btn" data-view="analytics">Details →</button></div><div class="chart-box small"><canvas id="expenseDonut"></canvas></div><div id="expenseLegend" class="mini-legend"></div></article>
+          <article class="panel-card wide"><div class="panel-head"><div><h3>Last 7 days</h3><p>Spending trend</p></div></div><div class="chart-box"><canvas id="spendingLine"></canvas></div></article>
+          <article class="panel-card"><div class="panel-head"><div><h3>Recent activity</h3><p>Latest entries</p></div><button class="text-btn" data-view="activities">View all →</button></div><div id="recentActivities"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><h3>Recent expenses</h3><p>Latest spending</p></div><button class="text-btn" data-view="expenses">View all →</button></div><div id="recentExpenses"></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-activities">
+        <div class="page-heading"><div><div class="eyebrow">TRACK</div><h2>Activities</h2><p>Log what you spend your time on.</p></div><button class="primary-btn" data-open-modal="activity">+ New activity</button></div>
+        <div class="content-grid two">
+          <article class="panel-card form-card"><div class="panel-head"><div><h3>Quick log</h3><p>Save an activity to the cloud.</p></div></div><form id="activityForm"><label>Activity name<input id="aName" required maxlength="100" placeholder="e.g. Client reporting"></label><label>Category<div id="activityCats" class="chip-list"></div><input type="hidden" id="aCategory" value="Work"></label><div class="form-row"><label>Date<input id="aDate" type="date" required></label><label>Time<input id="aTime" type="time"></label></div><div class="form-row"><label>Duration (hours)<input id="aDuration" type="number" min="0" step="0.25" placeholder="1.5"></label><label>Status<select id="aStatus"><option>Completed</option><option>Pending</option><option>In Progress</option><option>Cancelled</option></select></label></div><label>Notes<textarea id="aNotes" rows="3" placeholder="Optional notes..."></textarea></label><button class="primary-btn full" type="submit">Save activity</button></form></article>
+          <article class="panel-card list-card"><div class="panel-head"><div><h3>Activity log</h3><p id="activityCount">0 entries</p></div><div class="filter-row"><input id="activitySearch" class="search" placeholder="Search..."><select id="activityFilter"><option value="">All categories</option></select></div></div><div id="activityList" class="entry-list"></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-expenses">
+        <div class="page-heading"><div><div class="eyebrow">MONEY</div><h2>Expenses</h2><p>See where your money goes.</p></div><button class="primary-btn" data-open-modal="expense">+ New expense</button></div>
+        <div class="content-grid two">
+          <article class="panel-card form-card"><div class="panel-head"><div><h3>Quick expense</h3><p>Record a payment in seconds.</p></div></div><form id="expenseForm"><label>Expense name<input id="eName" required maxlength="100" placeholder="e.g. Lunch"></label><label>Category<div id="expenseCats" class="chip-list"></div><input type="hidden" id="eCategory" value="Food"></label><div class="form-row"><label>Amount (₹)<input id="eAmount" type="number" min="0.01" step="0.01" required placeholder="250"></label><label>Payment mode<select id="eMode"><option>UPI</option><option>Cash</option><option>Card</option><option>Net Banking</option><option>Other</option></select></label></div><label>Date<input id="eDate" type="date" required></label><label>Notes<textarea id="eNotes" rows="3" placeholder="Optional notes..."></textarea></label><button class="primary-btn full orange" type="submit">Save expense</button></form></article>
+          <article class="panel-card list-card"><div class="panel-head"><div><h3>Expense log</h3><p id="expenseCount">0 entries</p></div><div class="filter-row"><input id="expenseSearch" class="search" placeholder="Search..."><select id="expenseFilter"><option value="">All categories</option></select></div></div><div id="expenseList" class="entry-list"></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-analytics">
+        <div class="page-heading"><div><div class="eyebrow">INSIGHTS</div><h2>Analytics</h2><p>Understand your time and spending patterns.</p></div><div class="period-tabs" id="analyticsPeriod"><button class="active" data-period="month">This month</button><button data-period="week">7 days</button><button data-period="all">All time</button></div></div>
+        <div class="kpi-grid three"><article class="stat-card accent-blue"><div><span>Top activity</span><strong class="text-stat" id="topActivity">—</strong><small id="topActivityMeta">No data</small></div></article><article class="stat-card accent-orange"><div><span>Top expense category</span><strong class="text-stat" id="topExpense">—</strong><small id="topExpenseMeta">No data</small></div></article><article class="stat-card accent-green"><div><span>Average daily spend</span><strong id="avgSpend">₹0</strong><small id="avgSpendMeta">Selected period</small></div></article></div>
+        <div class="dashboard-grid analytics-grid"><article class="panel-card wide"><div class="panel-head"><div><h3>Activity hours</h3><p>Hours by category</p></div></div><div class="chart-box"><canvas id="activityBar"></canvas></div></article><article class="panel-card"><div class="panel-head"><div><h3>Payment modes</h3><p>How you paid</p></div></div><div class="chart-box small"><canvas id="paymentPie"></canvas></div><div id="paymentLegend" class="mini-legend"></div></article><article class="panel-card wide"><div class="panel-head"><div><h3>Expense categories</h3><p>Monthly distribution</p></div></div><div id="categoryBars" class="category-bars"></div></article></div>
+      </section>
+
+      <section class="view" id="view-history">
+        <div class="page-heading"><div><div class="eyebrow">TIMELINE</div><h2>History</h2><p>Everything you've logged, newest first.</p></div><div class="filter-row"><input id="historySearch" class="search wide-search" placeholder="Search everything..."><select id="historyType"><option value="all">All entries</option><option value="activity">Activities</option><option value="expense">Expenses</option></select></div></div>
+        <article class="panel-card"><div id="historyList" class="timeline-list"></div></article>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="page-heading"><div><div class="eyebrow">CONTROL CENTER</div><h2>Settings</h2><p>Manage appearance and your data.</p></div></div>
+        <div class="settings-grid">
+          <article class="panel-card"><div class="panel-head"><div><h3>Appearance</h3><p>Make the tracker comfortable to use.</p></div></div><div class="setting-row"><div><b>Dark mode</b><small>Switch between light and dark themes.</small></div><button class="switch" id="darkSwitch" aria-label="Toggle dark mode"><i></i></button></div></article>
+          <article class="panel-card"><div class="panel-head"><div><h3>Data &amp; backup</h3><p>Keep a copy before making destructive changes.</p></div></div><div class="setting-actions"><button class="secondary-btn" id="exportActivities">Export activities CSV</button><button class="secondary-btn" id="exportExpenses">Export expenses CSV</button><button class="secondary-btn" id="exportBackup">Export full JSON backup</button><button class="danger-btn" id="clearData">Delete all tracker data</button></div></article>
+          <article class="panel-card"><div class="panel-head"><div><h3>About this version</h3><p>Built for GitHub Pages + Firebase.</p></div></div><div class="about-list"><div><span>Storage</span><b>Cloud Firestore</b></div><div><span>Collections</span><b>Activities + Expenses</b></div><div><span>Version</span><b>2.0</b></div></div></article>
+        </div>
+      </section>
+    </main>
   </div>
-  <nav class="nav">
-    <button type="button" class="nav-btn active" data-tab="dash">Dashboard</button>
-    <button type="button" class="nav-btn" data-tab="act">Activities</button>
-    <button type="button" class="nav-btn" data-tab="exp">Expenses</button>
-    <button type="button" class="nav-btn" data-tab="history">History</button>
-    <button type="button" class="nav-btn" data-tab="export">Export</button>
-  </nav>
-</header>
 
-<div id="toast">Saved!</div>
+  <div class="bottom-nav" id="bottomNav"><button class="active" data-view="dashboard">⌂<small>Home</small></button><button data-view="activities">✓<small>Activities</small></button><button data-view="expenses">₹<small>Expenses</small></button><button data-view="analytics">◔<small>Insights</small></button><button data-view="settings">⚙<small>Settings</small></button></div>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<div id="p-dash" class="panel active">
-  <p style="font-size:.78rem;color:var(--ink3);margin-bottom:12px;font-weight:500" id="dash-date"></p>
-  <div class="sec-title">Today at a Glance</div>
-  <div class="kpi-grid">
-    <div class="kpi pine"><div class="kpi-val" id="kpi-acts">0</div><div class="kpi-lbl">Activities</div></div>
-    <div class="kpi sky"><div class="kpi-val" id="kpi-hours">0h</div><div class="kpi-lbl">Time Logged</div></div>
-    <div class="kpi amber"><div class="kpi-val" id="kpi-exp-today">₹0</div><div class="kpi-lbl">Spent Today</div></div>
-    <div class="kpi rose"><div class="kpi-val" id="kpi-exp-month">₹0</div><div class="kpi-lbl">This Month</div></div>
-  </div>
-  <div class="sec-title">Daily Summary</div>
-  <div class="card card-sm" id="daily-summary-card"><div id="daily-summary-content"><div class="empty"><div class="empty-icon">📊</div><div class="empty-txt">Loading daily summary...</div></div></div></div>
-  <div class="charts-row">
-    <div class="chart-card" style="padding:14px"><div class="chart-header"><div class="chart-title">💰 Spending <span class="chart-sub">by category</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-exp-donut"></canvas></div><div class="chart-legend" id="legend-donut"></div></div>
-    <div class="chart-card" style="padding:14px"><div class="chart-header"><div class="chart-title">✅ Tasks <span class="chart-sub">completion</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-completion-ring"></canvas></div><div style="text-align:center;margin-top:8px"><div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:600;color:var(--pine)" id="completion-pct">—</div><div style="font-size:.68rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Completion Rate</div></div></div>
-  </div>
-  <div class="chart-card"><div class="chart-header"><div class="chart-title">📈 Daily Spending <span class="chart-sub">last 7 days</span></div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-spending-line"></canvas></div></div>
-  <div class="chart-card"><div class="chart-header"><div class="chart-title">🏷️ Activity Hours <span class="chart-sub">by category</span></div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-act-bar"></canvas></div></div>
-  <div class="chart-card"><div class="chart-header"><div class="chart-title">💳 Payment Modes <span class="chart-sub">this month</span></div></div><div class="chart-wrap" style="height:160px"><canvas id="chart-payment-pie"></canvas></div><div class="chart-legend" id="legend-payment"></div></div>
-  <div class="sec-title">Recent Activities</div><div class="card card-sm"><div id="dash-acts"><div class="empty"><div class="empty-icon">🌱</div><div class="empty-txt">No activities yet today.</div></div></div></div>
-  <div class="sec-title">Recent Expenses</div><div class="card card-sm"><div id="dash-exps"><div class="empty"><div class="empty-icon">💸</div><div class="empty-txt">No expenses yet today.</div></div></div></div>
-  <div class="sec-title">Category Spending</div><div class="card card-sm"><div id="dash-cat-summary" class="cat-summary"></div></div>
-</div>
+  <div class="modal-backdrop" id="modalBackdrop"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><div class="eyebrow" id="modalKicker">EDIT</div><h3 id="modalTitle">Edit entry</h3></div><button class="icon-btn" id="modalClose">×</button></div><form id="editForm"></form></div></div>
+  <div id="toast" role="status"></div>
 
-<div id="p-act" class="panel">
-  <div class="sec-title">Log Activity</div>
-  <div class="card">
-    <div class="field"><label>Activity Name *</label><input id="a-name" type="text" placeholder="e.g. Morning run, Client call…" autocomplete="off"></div>
-    <div class="field"><label>Category</label><div class="cat-pills" id="act-cat-pills"></div><input type="hidden" id="a-cat" value="Work"></div>
-    <div class="grid-2"><div class="field"><label>Date</label><input id="a-date" type="date"></div><div class="field"><label>Time</label><input id="a-time" type="time"></div></div>
-    <div class="grid-2"><div class="field"><label>Duration</label><input id="a-dur" type="number" min="0" step="0.25" placeholder="hrs"></div><div class="field"><label>Status</label><select id="a-status"><option value="Completed">✅ Completed</option><option value="Pending">⏳ Pending</option><option value="In Progress">🔄 In Progress</option><option value="Cancelled">❌ Cancelled</option></select></div></div>
-    <div class="field"><label>Notes</label><textarea id="a-notes" placeholder="Optional details…"></textarea></div>
-    <button type="button" class="btn-save green" id="saveActivityBtn">✓ Save Activity</button>
-  </div>
-</div>
-
-<div id="p-exp" class="panel">
-  <div class="sec-title">Log Expense</div>
-  <div class="card">
-    <div class="field"><label>Expense Name *</label><input id="e-name" type="text" placeholder="e.g. Lunch, Uber, Groceries…" autocomplete="off"></div>
-    <div class="field"><label>Category</label><div class="cat-pills" id="exp-cat-pills"></div><input type="hidden" id="e-cat" value="Food"></div>
-    <div class="grid-2"><div class="field"><label>Amount (₹) *</label><input id="e-amt" type="number" min="0" step="0.01" placeholder="0.00"></div><div class="field"><label>Payment Mode</label><select id="e-mode"><option>UPI</option><option>Cash</option><option>Card</option><option>Net Banking</option><option>Other</option></select></div></div>
-    <div class="field"><label>Date</label><input id="e-date" type="date"></div>
-    <div class="field"><label>Notes</label><textarea id="e-notes" placeholder="Optional…" style="min-height:54px"></textarea></div>
-    <button type="button" class="btn-save amber" id="saveExpenseBtn">₹ Save Expense</button>
-  </div>
-</div>
-
-<div id="p-history" class="panel">
-  <div class="sec-title">Activity History</div>
-  <div class="card card-sm" style="margin-bottom:8px"><div class="history-filters" style="display:flex;gap:8px;align-items:center"><input id="h-search-act" type="text" placeholder="Search activities…" style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"><select id="h-filter-act" style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none"><option value="">All cats</option><option>Work</option><option>Learning</option><option>Exercise</option><option>Personal</option><option>Other</option></select></div></div>
-  <div class="card card-sm" id="hist-act-list"></div>
-  <div class="divider"></div><div class="sec-title">Expense History</div>
-  <div class="card card-sm" style="margin-bottom:8px"><div class="history-filters" style="display:flex;gap:8px;align-items:center"><input id="h-search-exp" type="text" placeholder="Search expenses…" style="flex:1;background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.88rem;outline:none"><select id="h-filter-exp" style="background:var(--paper);border:1.5px solid var(--rule);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:.82rem;outline:none;-webkit-appearance:none;appearance:none"><option value="">All cats</option><option>Food</option><option>Transport</option><option>Bills</option><option>Shopping</option><option>Health</option><option>Entertainment</option><option>Stock</option><option>Aura Silver</option><option>Petrol</option><option>Parking</option><option>Other</option></select></div></div>
-  <div class="card card-sm" id="hist-exp-list"></div>
-  <div class="divider"></div><div class="sec-title">Monthly Expense Summary</div>
-  <div class="card card-sm"><table class="month-table" id="monthly-table"><thead><tr><th>Month</th><th>Entries</th><th>Total</th></tr></thead><tbody id="monthly-tbody"></tbody></table></div>
-</div>
-
-<div id="p-export" class="panel">
-  <div class="sec-title">Export Data</div>
-  <div class="card">
-    <p style="font-size:.83rem;color:var(--ink2);line-height:1.6;margin-bottom:16px">Download CSV files — paste directly into your Excel sheets or import into Google Sheets / OneDrive.</p>
-    <button type="button" class="btn-export pine" id="exportActivitiesBtn"><span class="btn-icon">📋</span> Export Activities CSV</button>
-    <button type="button" class="btn-export amber" id="exportExpensesBtn"><span class="btn-icon">💰</span> Export Expenses CSV</button>
-  </div>
-  <div class="sec-title">Summary Stats</div><div class="card card-sm" id="stats-card" style="font-size:.85rem;line-height:2;color:var(--ink2)"></div>
-  <div class="sec-title">Data Management</div>
-  <div class="card card-sm"><p style="font-size:.8rem;color:var(--ink3);margin-bottom:12px;line-height:1.5">Clear all stored data permanently. Download your CSV backup first.</p><button type="button" class="btn-export" style="border-color:var(--rose);background:var(--rose-l);color:var(--rose)" id="clearAllBtn"><span class="btn-icon">🗑</span> Clear All Data</button></div>
-</div>
-
-<script defer src="script.js?v=20260824-2"></script>
+  <script defer src="script.js?v=20260825-1"></script>
 </body>
 </html>
