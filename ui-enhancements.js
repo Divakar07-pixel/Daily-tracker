@@ -1,85 +1,132 @@
 (()=>{
   const key='dailyTracker_sidebar_collapsed';
-  const css=`
-    .sidebar-toggle,.desktop-sidebar-toggle{display:grid!important;place-items:center;border:0;cursor:pointer}
-    .sidebar-toggle{width:30px;height:30px;border-radius:8px;background:transparent;color:#94a3b8;font-size:20px;margin-left:auto}
-    .sidebar-toggle:hover{background:#1d2939;color:#fff}
-    .desktop-sidebar-toggle{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;font-size:17px;margin-right:10px}
-    .desktop-sidebar-toggle:hover{background:var(--surface2)}
-    @media(min-width:761px){
-      body.sidebar-collapsed .sidebar{width:76px;padding-left:10px;padding-right:10px}
-      body.sidebar-collapsed .main{margin-left:76px;width:calc(100% - 76px)}
-      body.sidebar-collapsed .brand{justify-content:center;padding-left:0;padding-right:0}
-      body.sidebar-collapsed .brand-copy{display:none}
-      body.sidebar-collapsed .nav-item{justify-content:center;padding-left:8px;padding-right:8px}
-      body.sidebar-collapsed .nav-item b{display:none}
-      body.sidebar-collapsed .sync{justify-content:center;padding:9px 5px}
-      body.sidebar-collapsed .sync-copy{display:none}
-      body.sidebar-collapsed .sidebar-toggle{margin-left:0}
-    }
-    @media(max-width:760px){
-      .sidebar-toggle,.desktop-sidebar-toggle{display:none!important}
-      .mobile-menu{display:grid!important;width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:10px;place-items:center;color:var(--text);margin-right:10px}
-      .sidebar.open{box-shadow:18px 0 45px rgba(0,0,0,.25)}
-      .sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(2px);z-index:90;display:none}
-      .sidebar-backdrop.open{display:block}
-    }
-  `;
-  const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
+  const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
+  const get=id=>document.getElementById(id);
 
   const init=()=>{
-    const sidebar=document.getElementById('sidebar');
-    const mobileToggle=document.getElementById('mobileMenu');
-    const sidebarToggle=document.getElementById('sidebarToggle');
-    const desktopToggle=document.getElementById('desktopSidebarToggle');
+    const sidebar=get('sidebar');
     if(!sidebar)return;
+    const mobileToggle=get('mobileMenu');
+    const insideToggle=get('sidebarToggle');
+    const desktopToggle=get('desktopSidebarToggle');
 
     let backdrop=document.querySelector('.sidebar-backdrop');
-    if(!backdrop){backdrop=document.createElement('div');backdrop.className='sidebar-backdrop';document.body.appendChild(backdrop)}
+    if(!backdrop){
+      backdrop=document.createElement('div');
+      backdrop.className='sidebar-backdrop';
+      document.body.appendChild(backdrop);
+    }
 
-    const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
-    const updateDesktopButtons=(collapsed)=>{
+    // Keep one authoritative desktop state on <body>.
+    const setDesktopState=(collapsed,save=true)=>{
       document.body.classList.toggle('sidebar-collapsed',collapsed);
+      if(save)localStorage.setItem(key,collapsed?'1':'0');
+      const icon=collapsed?'☰':'‹';
       const label=collapsed?'Expand sidebar':'Collapse sidebar';
-      if(sidebarToggle){sidebarToggle.textContent=collapsed?'›':'‹';sidebarToggle.title=label;sidebarToggle.setAttribute('aria-label',label)}
-      if(desktopToggle){desktopToggle.textContent=collapsed?'☰':'‹';desktopToggle.title=label;desktopToggle.setAttribute('aria-label',label)}
+      [insideToggle,desktopToggle].forEach(btn=>{
+        if(!btn)return;
+        btn.textContent=icon;
+        btn.setAttribute('aria-label',label);
+        btn.setAttribute('title',label);
+      });
     };
+
     const closeMobile=()=>{
       sidebar.classList.remove('open');
       backdrop.classList.remove('open');
-      if(mobileToggle){mobileToggle.textContent='☰';mobileToggle.title='Open menu';mobileToggle.setAttribute('aria-label','Open menu')}
+      if(mobileToggle){
+        mobileToggle.textContent='☰';
+        mobileToggle.setAttribute('aria-label','Open menu');
+        mobileToggle.setAttribute('title','Open menu');
+      }
     };
     const openMobile=()=>{
       sidebar.classList.add('open');
       backdrop.classList.add('open');
-      if(mobileToggle){mobileToggle.textContent='×';mobileToggle.title='Close menu';mobileToggle.setAttribute('aria-label','Close menu')}
+      if(mobileToggle){
+        mobileToggle.textContent='×';
+        mobileToggle.setAttribute('aria-label','Close menu');
+        mobileToggle.setAttribute('title','Close menu');
+      }
     };
-    const toggleSidebar=()=>{
+
+    const toggle=()=>{
       if(isMobile()){
         sidebar.classList.contains('open')?closeMobile():openMobile();
-        return;
+      }else{
+        setDesktopState(!document.body.classList.contains('sidebar-collapsed'));
       }
-      const collapsed=!document.body.classList.contains('sidebar-collapsed');
-      updateDesktopButtons(collapsed);
-      localStorage.setItem(key,collapsed?'1':'0');
     };
 
-    updateDesktopButtons(localStorage.getItem(key)==='1');
-    [sidebarToggle,desktopToggle].filter(Boolean).forEach(btn=>btn.addEventListener('click',toggleSidebar));
-    if(mobileToggle)mobileToggle.addEventListener('click',toggleSidebar);
-    backdrop.addEventListener('click',closeMobile);
-    document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{if(isMobile())closeMobile()}));
+    // Remove previous listeners from old DOM copies, then bind each visible control.
+    [insideToggle,desktopToggle,mobileToggle].filter(Boolean).forEach(btn=>{
+      const clone=btn.cloneNode(true);
+      btn.replaceWith(clone);
+      if(clone.id==='sidebarToggle'){
+        clone.addEventListener('click',toggle);
+      }else if(clone.id==='desktopSidebarToggle'){
+        clone.addEventListener('click',toggle);
+      }else if(clone.id==='mobileMenu'){
+        clone.addEventListener('click',toggle);
+      }
+    });
 
+    const currentInside=get('sidebarToggle');
+    const currentDesktop=get('desktopSidebarToggle');
+    const currentMobile=get('mobileMenu');
+
+    const style=document.createElement('style');
+    style.id='sidebar-controller-styles';
+    style.textContent=`
+      @media(min-width:761px){
+        .sidebar-toggle{display:grid!important;place-items:center;width:30px;height:30px;border:0;background:transparent;color:#94a3b8;border-radius:8px;font-size:20px;cursor:pointer;margin-left:auto}
+        .sidebar-toggle:hover{background:#1d2939;color:#fff}
+        .desktop-sidebar-toggle{display:grid!important;place-items:center;width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;font-size:17px;cursor:pointer;margin-right:10px;flex:none}
+        .desktop-sidebar-toggle:hover{background:var(--surface2)}
+        body.sidebar-collapsed .sidebar{width:76px!important;padding-left:10px!important;padding-right:10px!important}
+        body.sidebar-collapsed .main{margin-left:76px!important;width:calc(100% - 76px)!important}
+        body.sidebar-collapsed .brand{justify-content:center;padding-left:0;padding-right:0}
+        body.sidebar-collapsed .brand-copy{display:none!important}
+        body.sidebar-collapsed .nav-item{justify-content:center;padding-left:8px!important;padding-right:8px!important}
+        body.sidebar-collapsed .nav-item b{display:none!important}
+        body.sidebar-collapsed .sync{justify-content:center;padding-left:5px;padding-right:5px}
+        body.sidebar-collapsed .sync-copy{display:none!important}
+        body.sidebar-collapsed .sidebar-toggle{margin-left:0;transform:rotate(180deg)}
+      }
+      @media(max-width:760px){
+        .sidebar-toggle,.desktop-sidebar-toggle{display:none!important}
+        .mobile-menu{display:grid!important;place-items:center;width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:10px;color:var(--text);cursor:pointer;margin-right:10px;flex:none}
+        .sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(2px);z-index:90;display:none}
+        .sidebar-backdrop.open{display:block}
+        .sidebar.open{box-shadow:18px 0 45px rgba(0,0,0,.25)}
+      }
+    `;
+    document.getElementById('sidebar-controller-styles')?.remove();
+    document.head.appendChild(style);
+
+    // Restore desktop state only on desktop; mobile never inherits the collapsed desktop width.
+    if(isMobile()){
+      document.body.classList.remove('sidebar-collapsed');
+      closeMobile();
+    }else{
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      setDesktopState(localStorage.getItem(key)==='1',false);
+    }
+
+    backdrop.onclick=closeMobile;
     window.addEventListener('resize',()=>{
       if(isMobile()){
         document.body.classList.remove('sidebar-collapsed');
-        if(mobileToggle){mobileToggle.textContent=sidebar.classList.contains('open')?'×':'☰'}
+        closeMobile();
       }else{
         sidebar.classList.remove('open');
         backdrop.classList.remove('open');
-        updateDesktopButtons(localStorage.getItem(key)==='1');
+        setDesktopState(localStorage.getItem(key)==='1',false);
       }
     });
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
 })();
