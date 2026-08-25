@@ -1,6 +1,73 @@
 (()=>{
   const key='dailyTracker_sidebar_collapsed';
-  const apply=collapsed=>{document.body.classList.toggle('sidebar-collapsed',collapsed);const b=document.getElementById('sidebarToggle');const d=document.getElementById('desktopSidebarToggle');if(b)b.textContent=collapsed?'›':'‹';if(d)d.setAttribute('title',collapsed?'Show sidebar':'Hide sidebar')};
-  const init=()=>{const saved=localStorage.getItem(key)==='1';apply(saved);const toggle=()=>{const collapsed=!document.body.classList.contains('sidebar-collapsed');apply(collapsed);localStorage.setItem(key,collapsed?'1':'0')};document.getElementById('sidebarToggle')?.addEventListener('click',toggle);document.getElementById('desktopSidebarToggle')?.addEventListener('click',toggle)};
+  const css=`
+    /* One sidebar toggle for desktop + mobile */
+    .sidebar-toggle{display:none!important}
+    .mobile-menu{display:grid!important;flex:none;position:relative;z-index:80}
+    @media(min-width:761px){
+      .mobile-menu{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;place-items:center;margin-right:10px;font-size:17px}
+      body.sidebar-collapsed .sidebar{width:76px;padding-left:10px;padding-right:10px}
+      body.sidebar-collapsed .main{margin-left:76px;width:calc(100% - 76px)}
+      body.sidebar-collapsed .brand{justify-content:center;padding-left:0;padding-right:0}
+      body.sidebar-collapsed .brand>div:not(.brand-mark){display:none}
+      body.sidebar-collapsed .nav-item{justify-content:center;padding-left:8px;padding-right:8px}
+      body.sidebar-collapsed .nav-item b{display:none}
+      body.sidebar-collapsed .sync{justify-content:center;padding:9px 5px}
+      body.sidebar-collapsed .sync>div{display:none}
+    }
+    @media(max-width:760px){
+      .mobile-menu{width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:10px;place-items:center;color:var(--text);margin-right:10px}
+      .sidebar.open{box-shadow:18px 0 45px rgba(0,0,0,.25)}
+      .sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(2px);z-index:90;display:none}
+      .sidebar-backdrop.open{display:block}
+    }
+  `;
+  const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
+
+  const init=()=>{
+    const sidebar=document.getElementById('sidebar');
+    const toggle=document.getElementById('mobileMenu');
+    if(!sidebar||!toggle)return;
+
+    let backdrop=document.querySelector('.sidebar-backdrop');
+    if(!backdrop){backdrop=document.createElement('div');backdrop.className='sidebar-backdrop';document.body.appendChild(backdrop)}
+
+    const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
+    const applyDesktop=collapsed=>{
+      document.body.classList.toggle('sidebar-collapsed',collapsed);
+      toggle.textContent=collapsed?'☰':'‹';
+      toggle.title=collapsed?'Expand sidebar':'Collapse sidebar';
+      toggle.setAttribute('aria-label',toggle.title);
+    };
+    const saved=localStorage.getItem(key)==='1';
+    applyDesktop(saved);
+
+    const closeMobile=()=>{sidebar.classList.remove('open');backdrop.classList.remove('open');toggle.textContent='☰';toggle.title='Open menu'};
+    const openMobile=()=>{sidebar.classList.add('open');backdrop.classList.add('open');toggle.textContent='×';toggle.title='Close menu'};
+
+    const handleToggle=()=>{
+      if(isMobile()){
+        sidebar.classList.contains('open')?closeMobile():openMobile();
+      }else{
+        const collapsed=!document.body.classList.contains('sidebar-collapsed');
+        applyDesktop(collapsed);
+        localStorage.setItem(key,collapsed?'1':'0');
+      }
+    };
+
+    toggle.addEventListener('click',handleToggle);
+    backdrop.addEventListener('click',closeMobile);
+    window.addEventListener('resize',()=>{
+      if(!isMobile()){
+        sidebar.classList.remove('open');backdrop.classList.remove('open');
+        applyDesktop(document.body.classList.contains('sidebar-collapsed'));
+      }else{
+        toggle.textContent=sidebar.classList.contains('open')?'×':'☰';
+      }
+    });
+
+    // Close the mobile drawer after choosing a page.
+    document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{if(isMobile())closeMobile()}));
+  };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
