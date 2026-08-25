@@ -1,7 +1,6 @@
 (()=>{
   const key='dailyTracker_sidebar_collapsed';
   const css=`
-    /* One sidebar toggle for desktop + mobile */
     .sidebar-toggle{display:none!important}
     .mobile-menu{display:grid!important;flex:none;position:relative;z-index:80}
     @media(min-width:761px){
@@ -23,51 +22,20 @@
     }
   `;
   const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
-
   const init=()=>{
-    const sidebar=document.getElementById('sidebar');
-    const toggle=document.getElementById('mobileMenu');
+    const sidebar=document.getElementById('sidebar'),toggle=document.getElementById('mobileMenu');
     if(!sidebar||!toggle)return;
-
     let backdrop=document.querySelector('.sidebar-backdrop');
     if(!backdrop){backdrop=document.createElement('div');backdrop.className='sidebar-backdrop';document.body.appendChild(backdrop)}
-
     const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
-    const applyDesktop=collapsed=>{
-      document.body.classList.toggle('sidebar-collapsed',collapsed);
-      toggle.textContent=collapsed?'☰':'‹';
-      toggle.title=collapsed?'Expand sidebar':'Collapse sidebar';
-      toggle.setAttribute('aria-label',toggle.title);
-    };
-    const saved=localStorage.getItem(key)==='1';
-    applyDesktop(saved);
-
+    const applyDesktop=collapsed=>{document.body.classList.toggle('sidebar-collapsed',collapsed);toggle.textContent=collapsed?'☰':'‹';toggle.title=collapsed?'Expand sidebar':'Collapse sidebar';toggle.setAttribute('aria-label',toggle.title)};
     const closeMobile=()=>{sidebar.classList.remove('open');backdrop.classList.remove('open');toggle.textContent='☰';toggle.title='Open menu'};
     const openMobile=()=>{sidebar.classList.add('open');backdrop.classList.add('open');toggle.textContent='×';toggle.title='Close menu'};
-
-    const handleToggle=()=>{
-      if(isMobile()){
-        sidebar.classList.contains('open')?closeMobile():openMobile();
-      }else{
-        const collapsed=!document.body.classList.contains('sidebar-collapsed');
-        applyDesktop(collapsed);
-        localStorage.setItem(key,collapsed?'1':'0');
-      }
-    };
-
-    toggle.addEventListener('click',handleToggle);
+    applyDesktop(localStorage.getItem(key)==='1');
+    toggle.addEventListener('click',()=>{if(isMobile()){sidebar.classList.contains('open')?closeMobile():openMobile()}else{const collapsed=!document.body.classList.contains('sidebar-collapsed');applyDesktop(collapsed);localStorage.setItem(key,collapsed?'1':'0')}});
     backdrop.addEventListener('click',closeMobile);
-    window.addEventListener('resize',()=>{
-      if(!isMobile()){
-        sidebar.classList.remove('open');backdrop.classList.remove('open');
-        applyDesktop(document.body.classList.contains('sidebar-collapsed'));
-      }else{
-        toggle.textContent=sidebar.classList.contains('open')?'×':'☰';
-      }
-    });
-
-    // Close the mobile drawer after choosing a page.
     document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{if(isMobile())closeMobile()}));
+    window.addEventListener('resize',()=>{if(isMobile()){document.body.classList.remove('sidebar-collapsed');toggle.textContent=sidebar.classList.contains('open')?'×':'☰'}else{sidebar.classList.remove('open');backdrop.classList.remove('open');applyDesktop(localStorage.getItem(key)==='1')}});
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
