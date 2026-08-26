@@ -5,7 +5,7 @@
   const norm=s=>String(s??'').toLowerCase().replace(/\s+/g,' ').trim();
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-  const categoryFor=text=>{const t=norm(text);if(/swiggy|zomato|restaurant|cafe|food|hotel|bakery|domino|pizza|blinkit|zepto|instamart|bigbasket|grocery|tea|pothys/.test(t))return 'Food';if(/uber|ola|rapido|metro|bus|irctc|railway|transport|auto|cab|fuel|petrol|parking/.test(t))return /fuel|petrol/.test(t)?'Petrol':/parking/.test(t)?'Parking':'Transport';if(/electricity|eb bill|water|gas bill|broadband|airtel|jio|vi |recharge|insurance|rent|bill/.test(t))return 'Bills';if(/amazon|flipkart|myntra|ajio|meesho|shopping|mall|store/.test(t))return 'Shopping';if(/pharmacy|hospital|clinic|medical|apollo|health/.test(t))return 'Health';if(/netflix|spotify|youtube|prime|hotstar|movie|cinema|bookmyshow|game|jiohotstar/.test(t))return 'Entertainment';if(/zerodha|groww|upstox|stock|mutual fund|sip/.test(t))return 'Stock';if(/silver|digital silver|auragold|auragold/.test(t))return 'Aura Silver';return 'Other'};
+  const categoryFor=text=>{const t=norm(text);if(/swiggy|zomato|restaurant|cafe|food|hotel|bakery|domino|pizza|blinkit|zepto|instamart|bigbasket|grocery|tea|pothys/.test(t))return 'Food';if(/uber|ola|rapido|metro|bus|irctc|railway|transport|auto|cab|fuel|petrol|parking/.test(t))return /fuel|petrol/.test(t)?'Petrol':/parking/.test(t)?'Parking':'Transport';if(/electricity|eb bill|water|gas bill|broadband|airtel|jio|vi |recharge|insurance|rent|bill/.test(t))return 'Bills';if(/amazon|flipkart|myntra|ajio|meesho|shopping|mall|store/.test(t))return 'Shopping';if(/pharmacy|hospital|clinic|medical|apollo|health/.test(t))return 'Health';if(/netflix|spotify|youtube|prime|hotstar|movie|cinema|bookmyshow|game|jiohotstar/.test(t))return 'Entertainment';if(/zerodha|groww|upstox|stock|mutual fund|sip/.test(t))return 'Stock';if(/silver|digital silver|auragold/.test(t))return 'Aura Silver';return 'Other'};
   function toast(m){if(window.toast)window.toast(m);else{const t=document.getElementById('toast');if(t){t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}}}
   function parseDate(v){const m=String(v??'').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);if(!m)return '';const y=m[3].length===2?'20'+m[3]:m[3];return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`}
   function amount(v){const s=String(v??'').replace(/,/g,'').replace(/₹|INR|Rs\.?/gi,'').trim();return /^\d+(?:\.\d{1,2})?$/.test(s)?Number(s):0}
@@ -17,46 +17,51 @@
     return lines.slice(dateI>=0||amtI>=0||descI>=0?1:0).map(line=>{const a=split(line),d=parseDate(dateI>=0?a[dateI]:a[0]);let am=amount(amtI>=0?a[amtI]:a[a.length-1]);if(!am)am=a.map(amount).filter(Boolean).at(-1)||0;const desc=descI>=0?a[descI]:a.slice(1,-1).join(' ');return d&&am?{date:d,name:desc||'Imported transaction',amount:am,mode:modeI>=0?a[modeI]:'UPI',category:categoryFor(desc+' '+line),notes:`Imported from ${source}`} : null}).filter(Boolean);
   }
 
-  // SBI statements can be extracted by PDF.js in TWO valid layouts:
-  // A) "03/05/2026 03/05/2026" on one line
-  // B) the two dates on two consecutive lines. The old parser handled only A.
+  // SBI PDF extraction is intentionally token-based. PDF.js can return the four
+  // amount columns as four separate lines OR as one combined line. Both forms
+  // are handled here. A debit row is: - DEBIT - BALANCE. A credit row is:
+  // - - CREDIT BALANCE and is therefore ignored.
   function parseSBI(text){
-    const lines=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
-    const date=/^\d{2}\/\d{2}\/\d{4}$/;
+    const lines=text.replace(/\r/g,'').replace(/\u00a0/g,' ').split('\n').map(x=>x.trim()).filter(Boolean);
+    const dateOnly=/^\d{2}\/\d{2}\/\d{4}$/;
     const pair=/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(.*))?$/;
     const starts=[];
     for(let i=0;i<lines.length;i++){
       const p=lines[i].match(pair);
-      if(p) starts.push({i,date:p[1],inline:p[3]||''});
-      else if(date.test(lines[i])&&date.test(lines[i+1]||'')) starts.push({i,date:lines[i],inline:'',separate:true});
+      if(p){starts.push({i,date:p[1],inline:p[3]||'',skip:0});continue}
+      if(dateOnly.test(lines[i])&&dateOnly.test(lines[i+1]||''))starts.push({i,date:lines[i],inline:'',skip:1});
     }
     const out=[];
+    const moneyToken=/^(?:-|\d[\d,]*\.\d{2})$/;
     for(let n=0;n<starts.length;n++){
-      const st=starts[n], next=starts[n+1]?.i??lines.length;
-      let body=[];
-      let k=st.i+1;
-      if(st.separate) k++;
-      if(st.inline) body.push(st.inline);
-      for(;k<next;k++) body.push(lines[k]);
-      let amountIndex=-1, tokens=[];
-      for(let j=body.length-1;j>=0;j--){
-        const t=body[j].split(/\s+/).filter(Boolean);
-        if(t.length>=3 && t.length<=4 && t.every(x=>x==='-'||/^\d[\d,]*\.\d{2}$/.test(x))){amountIndex=j;tokens=t;break}
+      const st=starts[n],next=starts[n+1]?.i??lines.length;
+      const body=[];
+      if(st.inline)body.push(st.inline);
+      for(let k=st.i+1+st.skip;k<next;k++)body.push(lines[k]);
+      const header=body.join(' ');
+      if(!/\bWDL\b|ATM\s+WDL/i.test(header))continue;
+
+      // Flatten only the transaction body. This works whether PDF.js gives:
+      // "- 100.00 - 43.93" OR "-", "100.00", "-", "43.93".
+      const tokens=body.join(' ').split(/\s+/).filter(Boolean);
+      let amounts=null;
+      for(let j=tokens.length-4;j>=0;j--){
+        const candidate=tokens.slice(j,j+4);
+        if(candidate.length===4&&candidate.every(t=>moneyToken.test(t))){amounts=candidate;break}
       }
-      if(amountIndex<0) continue;
-      const header=body.slice(0,amountIndex).join(' ');
-      if(!/\bWDL\b|ATM WDL/i.test(header)) continue;
-      // SBI debit rows are normally "- 100.00 - 43.93". The second token is debit.
-      // If PDF.js collapses the leading dash, fall back to the first amount before balance.
-      let debit=0;
-      if(tokens.length>=4) debit=amount(tokens[1]);
-      else if(tokens.length===3) debit=amount(tokens[0]);
-      if(!(debit>0)) continue;
+      if(!amounts)continue;
+      const debit=amount(amounts[1]);
+      if(!(debit>0))continue; // credits have '-' in the debit position
+
       let name='Imported transaction';
       const u=header.match(/UPI\/DR\/\d+\/([^/\s]+)/i);
-      if(u) name=u[1].replace(/[_-]+/g,' ').trim();
-      else {const atm=header.match(/ATM WDL\s+ATM CASH\s+(.+?)(?:\s+IRUMBULIYUR|\s+OPP TO|$)/i);if(atm)name='ATM Cash '+atm[1].trim();else name=header.replace(/^WDL TFR\s*/i,'').replace(/\s+/g,' ').trim().slice(0,80)||name}
-      out.push({date:parseDate(st.date),name,amount:debit,mode:/ATM WDL/i.test(header)?'Cash':'UPI',category:categoryFor(header),notes:`Imported from ${source}`});
+      if(u)name=u[1].replace(/[_-]+/g,' ').trim();
+      else{
+        const atm=header.match(/ATM\s+WDL\s+ATM\s+CASH\s+(.+?)(?:\s+IRUMBULIYUR|\s+OPP\s+TO|$)/i);
+        if(atm)name='ATM Cash '+atm[1].trim();
+        else name=header.replace(/^WDL\s+TFR\s*/i,'').replace(/\s+/g,' ').trim().slice(0,80)||name;
+      }
+      out.push({date:parseDate(st.date),name,amount:debit,mode:/ATM\s+WDL/i.test(header)?'Cash':'UPI',category:categoryFor(header),notes:`Imported from ${source}`});
     }
     return out;
   }
