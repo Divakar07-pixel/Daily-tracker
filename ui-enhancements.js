@@ -17,7 +17,6 @@
       document.body.appendChild(backdrop);
     }
 
-    // Keep one authoritative desktop state on <body>.
     const setDesktopState=(collapsed,save=true)=>{
       document.body.classList.toggle('sidebar-collapsed',collapsed);
       if(save)localStorage.setItem(key,collapsed?'1':'0');
@@ -58,22 +57,11 @@
       }
     };
 
-    // Remove previous listeners from old DOM copies, then bind each visible control.
     [insideToggle,desktopToggle,mobileToggle].filter(Boolean).forEach(btn=>{
       const clone=btn.cloneNode(true);
       btn.replaceWith(clone);
-      if(clone.id==='sidebarToggle'){
-        clone.addEventListener('click',toggle);
-      }else if(clone.id==='desktopSidebarToggle'){
-        clone.addEventListener('click',toggle);
-      }else if(clone.id==='mobileMenu'){
-        clone.addEventListener('click',toggle);
-      }
+      if(clone.id==='sidebarToggle'||clone.id==='desktopSidebarToggle'||clone.id==='mobileMenu')clone.addEventListener('click',toggle);
     });
-
-    const currentInside=get('sidebarToggle');
-    const currentDesktop=get('desktopSidebarToggle');
-    const currentMobile=get('mobileMenu');
 
     const style=document.createElement('style');
     style.id='sidebar-controller-styles';
@@ -94,8 +82,8 @@
         body.sidebar-collapsed .sidebar-toggle{margin-left:0;transform:rotate(180deg)}
       }
       @media(max-width:760px){
-        .sidebar-toggle,.desktop-sidebar-toggle{display:none!important}
-        .mobile-menu{display:grid!important;place-items:center;width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:10px;color:var(--text);cursor:pointer;margin-right:10px;flex:none}
+        /* Mobile uses the fixed bottom navigation; no hamburger/menu button in the topbar. */
+        .mobile-menu,.sidebar-toggle,.desktop-sidebar-toggle{display:none!important}
         .sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(2px);z-index:90;display:none}
         .sidebar-backdrop.open{display:block}
         .sidebar.open{box-shadow:18px 0 45px rgba(0,0,0,.25)}
@@ -104,7 +92,6 @@
     document.getElementById('sidebar-controller-styles')?.remove();
     document.head.appendChild(style);
 
-    // Restore desktop state only on desktop; mobile never inherits the collapsed desktop width.
     if(isMobile()){
       document.body.classList.remove('sidebar-collapsed');
       closeMobile();
