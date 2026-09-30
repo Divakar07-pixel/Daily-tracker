@@ -9,10 +9,10 @@ button{cursor:pointer}
 
 /* ===== Sidebar (change --sb-w in :root to resize) ===== */
 .sidebar{width:var(--sb-w);background:var(--nav);color:#fff;position:fixed;inset:0 auto 0 0;z-index:100;padding:18px 10px;display:flex;flex-direction:column}
-.brand{display:flex;gap:11px;align-items:center;padding:3px 9px 22px}
+.brand{display:flex;gap:9px;align-items:center;padding:3px 4px 22px}
 .brand-mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:18px}
-.brand strong{font-family:'Plus Jakarta Sans';font-size:14px;display:block}
-.brand span{display:block;color:#94a3b8;font-size:10px;margin-top:3px}
+.brand strong{font-family:'Plus Jakarta Sans';font-size:14px;display:block;white-space:nowrap}
+.brand span{display:block;color:#94a3b8;font-size:10px;margin-top:3px;white-space:nowrap}
 .sidebar nav{display:grid;gap:3px}
 .nav-item{width:100%;border:0;background:transparent;color:#9ca3af;border-radius:11px;padding:9px 11px;display:flex;align-items:center;gap:11px;text-align:left;font-size:13px;font-weight:600;transition:.18s}
 .nav-item span{width:18px;text-align:center}
