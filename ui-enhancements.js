@@ -152,7 +152,7 @@
   const escIncome=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const shortIncome=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'';
   const incomeToday=()=>new Date().toISOString().slice(0,10);
-  const incomeRangeStart=()=>{const d=new Date();d.setDate(1);return d.toISOString().slice(0,10)};
+  const incomeRangeStart=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`};const incomeTodayLocal=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};const currentMonthRows=rows=>{const start=incomeRangeStart(),end=incomeTodayLocal();return rows.filter(e=>String(e.date||'')>=start&&String(e.date||'')<=end)};
   const injectButtons=()=>{
     document.querySelectorAll('[data-open-expense]').forEach(btn=>{
       if(btn.parentElement?.querySelector('[data-open-income]'))return;
@@ -193,16 +193,17 @@
   const getExpenseSnapshot=async()=>{try{return (await window.getDocs(window.collection(window.db,'expenses'))).docs.map(d=>({id:d.id,...d.data()}))}catch{return[]}};
   const renderFlow=async()=>{
     const host=document.querySelector('#view-dashboard .stats');if(!host)return;
-    const expenses=await getExpenseSnapshot();
-    const totalIncome=incomeState.rows.reduce((s,e)=>s+Number(e.amount||0),0);
+    const allExpenses=await getExpenseSnapshot();
+    const expenses=currentMonthRows(allExpenses),income=currentMonthRows(incomeState.rows);
+    const totalIncome=income.reduce((s,e)=>s+Number(e.amount||0),0);
     const totalExpense=expenses.reduce((s,e)=>s+Number(e.amount||0),0);
     const balance=totalIncome-totalExpense;
     let box=get('incomeFlow');
     if(!box){box=document.createElement('div');box.id='incomeFlow';box.className='income-flow';host.insertAdjacentElement('beforebegin',box)}
     box.innerHTML=`<div class="income-flow-card income"><span>Total income</span><strong>+${fmtMoney(totalIncome)}</strong><small>All recorded income</small></div><div class="income-flow-card expense"><span>Total expenses</span><strong>−${fmtMoney(totalExpense)}</strong><small>All recorded expenses</small></div><div class="income-flow-card balance"><span>Balance</span><strong>${balance<0?'−':'+'}${fmtMoney(Math.abs(balance))}</strong><small>Income minus expenses</small></div>`;
     const labels=host.querySelectorAll('.stat');
-    if(labels.length>=4){labels[0].querySelector('span').textContent='Total income';labels[0].querySelector('strong').textContent='+'+fmtMoney(totalIncome);labels[0].querySelector('small').textContent='All recorded income';labels[1].querySelector('span').textContent='Total expenses';labels[1].querySelector('strong').textContent='−'+fmtMoney(totalExpense);labels[1].querySelector('small').textContent='All recorded expenses';labels[2].querySelector('span').textContent='Balance';labels[2].querySelector('strong').textContent=(balance<0?'−':'+')+fmtMoney(Math.abs(balance));labels[2].querySelector('small').textContent='Income minus expenses';labels[3].querySelector('span').textContent='Transactions';labels[3].querySelector('strong').textContent=String(incomeState.rows.length+expenses.length);labels[3].querySelector('small').textContent='Income + expenses'}
-    const recent=get('recentList');if(recent){const all=[...expenses.map(e=>({...e,__type:'expense'})),...incomeState.rows.map(e=>({...e,__type:'income'}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,7);recent.innerHTML=all.length?all.map(e=>e.__type==='income'?incomeHTML(e):`<div class="transaction"><div class="tx-icon">−</div><div class="tx-main"><div class="tx-name">${escIncome(e.name||'Untitled expense')}</div><div class="tx-meta">${escIncome(e.category||'Other')} · ${escIncome(e.mode||'UPI')} · ${shortIncome(e.date)}${e.notes?' · '+escIncome(e.notes):''}</div></div><div class="tx-amount">−${fmtMoney(e.amount)}</div></div>`).join(''):'No transactions yet.'}
+    if(labels.length>=4){labels[0].querySelector('span').textContent='Total income';labels[0].querySelector('strong').textContent='+'+fmtMoney(totalIncome);labels[0].querySelector('small').textContent='Current month';labels[1].querySelector('span').textContent='Total expenses';labels[1].querySelector('strong').textContent='−'+fmtMoney(totalExpense);labels[1].querySelector('small').textContent='Current month';labels[2].querySelector('span').textContent='Balance';labels[2].querySelector('strong').textContent=(balance<0?'−':'+')+fmtMoney(Math.abs(balance));labels[2].querySelector('small').textContent='Income minus expenses';labels[3].querySelector('span').textContent='Transactions';labels[3].querySelector('strong').textContent=String(income.length+expenses.length);labels[3].querySelector('small').textContent='Current month'}
+    const recent=get('recentList');if(recent){const all=[...expenses.map(e=>({...e,__type:'expense'})),...income.map(e=>({...e,__type:'income'}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,7);recent.innerHTML=all.length?all.map(e=>e.__type==='income'?incomeHTML(e):`<div class="transaction"><div class="tx-icon">−</div><div class="tx-main"><div class="tx-name">${escIncome(e.name||'Untitled expense')}</div><div class="tx-meta">${escIncome(e.category||'Other')} · ${escIncome(e.mode||'UPI')} · ${shortIncome(e.date)}${e.notes?' · '+escIncome(e.notes):''}</div></div><div class="tx-amount">−${fmtMoney(e.amount)}</div></div>`).join(''):'No transactions yet.'}
   };
   const startIncome=()=>{
     injectButtons();makeModal();
